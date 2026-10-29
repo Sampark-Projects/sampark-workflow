@@ -1,6 +1,6 @@
 'use client'
 
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   applyNodeChanges,
   ConnectionLineType,
@@ -144,7 +144,6 @@ import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
 import { useOAuthReturnForWorkflow } from '@/hooks/use-oauth-return'
 import { useOperationAccess } from '@/hooks/use-operation-access'
 import { useCanvasModeStore } from '@/stores/canvas-mode'
-import { useChatStore } from '@/stores/chat/store'
 import { defaultWorkflowExecutionState, useExecutionStore } from '@/stores/execution'
 import { useSearchModalStore } from '@/stores/modals/search/store'
 import type { PendingConnect } from '@/stores/modals/search/types'
@@ -158,13 +157,6 @@ import { useWorkflowRegistry } from '@/stores/workflows/registry/store'
 import { getUniqueBlockName } from '@/stores/workflows/utils'
 import { useWorkflowStore } from '@/stores/workflows/workflow/store'
 import type { BlockState } from '@/stores/workflows/workflow/types'
-
-/** Lazy-loaded components for non-critical UI that can load after initial render */
-const LazyChat = lazy(() =>
-  import('@/app/workspace/[workspaceId]/w/[workflowId]/components/chat/chat').then((mod) => ({
-    default: mod.Chat,
-  }))
-)
 
 const logger = createLogger('Workflow')
 
@@ -436,7 +428,6 @@ const WorkflowContent = React.memo(
 
     // Panel open states for context menu
     const isVariablesOpen = useVariablesModalStore((state) => state.isOpen)
-    const isChatOpen = useChatStore((state) => state.isChatOpen)
 
     const snapGrid: [number, number] = useMemo(
       () => [snapToGridSize, snapToGridSize],
@@ -1507,14 +1498,6 @@ const WorkflowContent = React.memo(
       usePanelEditorStore.getState().triggerRename()
     }, [contextMenuBlocks])
 
-    const handleContextAddBlock = useCallback(() => {
-      useSearchModalStore.getState().open()
-    }, [])
-
-    const handleContextOpenLogs = useCallback(() => {
-      router.push(`/workspace/${workspaceId}/logs?workflowIds=${workflowIdParam}`)
-    }, [router, workspaceId, workflowIdParam])
-
     const handleContextOpenSearchReplace = useCallback(() => {
       useWorkflowSearchReplaceStore.getState().open()
     }, [])
@@ -1522,11 +1505,6 @@ const WorkflowContent = React.memo(
     const handleContextToggleVariables = useCallback(() => {
       const { isOpen, setIsOpen } = useVariablesModalStore.getState()
       setIsOpen(!isOpen)
-    }, [])
-
-    const handleContextToggleChat = useCallback(() => {
-      const { isChatOpen, setIsChatOpen } = useChatStore.getState()
-      setIsChatOpen(!isChatOpen)
     }, [])
 
     useEffect(() => {
@@ -5206,9 +5184,6 @@ const WorkflowContent = React.memo(
                       <FocusBlockDeepLink onTarget={setDeepLinkBlockId} />
                     </Suspense>
                     <WorkflowControls />
-                    <Suspense fallback={null}>
-                      <LazyChat />
-                    </Suspense>
 
                     <BlockMenu
                       isOpen={isBlockMenuOpen}
@@ -5251,15 +5226,11 @@ const WorkflowContent = React.memo(
                       onUndo={undo}
                       onRedo={redo}
                       onPaste={handleContextPaste}
-                      onAddBlock={handleContextAddBlock}
                       onAutoLayout={handleAutoLayout}
                       onFitToView={() => fitViewToBounds({ padding: 0.1, duration: 300 })}
-                      onOpenLogs={handleContextOpenLogs}
                       onOpenSearchReplace={handleContextOpenSearchReplace}
                       onToggleVariables={handleContextToggleVariables}
-                      onToggleChat={handleContextToggleChat}
                       isVariablesOpen={isVariablesOpen}
-                      isChatOpen={isChatOpen}
                       hasClipboard={hasClipboard()}
                       disableEdit={!effectivePermissions.canEdit}
                       canUndo={canUndo}

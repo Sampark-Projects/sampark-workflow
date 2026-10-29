@@ -24,6 +24,8 @@ import {
 } from '@/app/workspace/[workspaceId]/w/components/sidebar/hooks'
 import { useFolders } from '@/hooks/queries/folders'
 import type { Workspace } from '@/hooks/queries/workspace'
+import { usePermissionConfig } from '@/hooks/use-permission-config'
+import { useSearchModalStore } from '@/stores/modals/search/store'
 
 const logger = createLogger('Sidebar')
 
@@ -51,6 +53,14 @@ export const Sidebar = memo(function Sidebar() {
   const { workspace: routeWorkspace } = useWorkspaceHostContext()
   const { hosted } = useDeploymentShape()
   const { canEdit } = useUserPermissionsContext()
+
+  const { filterBlocks, isToolAllowed } = usePermissionConfig()
+  const initializeSearchData = useSearchModalStore((state) => state.initializeData)
+
+  /** Feeds the block list the connection block selector reads when a block is added off a handle. */
+  useEffect(() => {
+    initializeSearchData(filterBlocks, isToolAllowed)
+  }, [initializeSearchData, filterBlocks, isToolAllowed])
 
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false)
 
