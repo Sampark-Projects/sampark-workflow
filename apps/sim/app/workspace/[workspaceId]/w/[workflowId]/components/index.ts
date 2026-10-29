@@ -1,6 +1,5 @@
 export { BlockMenu } from './block-menu'
 export { CanvasMenu } from './canvas-menu'
-export { CommandList } from './command-list'
 export { Cursors } from './cursors'
 export { DiffControls } from './diff-controls'
 export { ErrorBoundary } from './error'

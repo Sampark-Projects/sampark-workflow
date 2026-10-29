@@ -58,11 +58,7 @@ import { requestNoteImage, requestNoteRename } from '@/lib/workflows/notes/canva
 import { TriggerUtils } from '@/lib/workflows/triggers/triggers'
 import { ConnectOAuthModal } from '@/app/workspace/[workspaceId]/components/connect-oauth-modal'
 import { useWorkspacePermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
-import {
-  CommandList,
-  DiffControls,
-  Panel,
-} from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
+import { DiffControls, Panel } from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
 import { BlockMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/block-menu'
 import { CanvasMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/canvas-menu'
 import {
@@ -565,8 +561,6 @@ const WorkflowContent = React.memo(
     const { handleAutoLayout: autoLayoutWithFitView } = useAutoLayout(activeWorkflowId || null, {
       embedded,
     })
-
-    const isWorkflowEmpty = !hasBlocks
 
     /** Handles OAuth connect events dispatched by Copilot tools. */
     useEffect(() => {
@@ -2382,62 +2376,6 @@ const WorkflowContent = React.memo(
       getPositionAfterSourceBlock,
       getUnattachedBlockPosition,
     ])
-
-    /**
-     * Listen for toolbar drops that occur on the empty-workflow overlay (command list).
-     *
-     * The overlay forwards drop events with the cursor position; this handler
-     * computes the corresponding ReactFlow coordinates and delegates to
-     * `handleToolbarDrop` so the behavior matches native canvas drops.
-     */
-    useEffect(() => {
-      const handleOverlayToolbarDrop = (event: Event) => {
-        const customEvent = event as CustomEvent<{
-          type: string
-          enableTriggerMode?: boolean
-          clientX: number
-          clientY: number
-        }>
-
-        const detail = customEvent.detail
-        if (!detail?.type) return
-
-        try {
-          const canvasElement = document.querySelector('.workflow-container') as HTMLElement | null
-          if (!canvasElement) {
-            logger.warn('Workflow canvas element not found for overlay toolbar drop')
-            return
-          }
-
-          const bounds = canvasElement.getBoundingClientRect()
-          const position = screenToFlowPosition({
-            x: detail.clientX - bounds.left,
-            y: detail.clientY - bounds.top,
-          })
-
-          handleToolbarDrop(
-            {
-              type: detail.type,
-              enableTriggerMode: detail.enableTriggerMode ?? false,
-            },
-            position
-          )
-        } catch (err) {
-          logger.error('Error handling toolbar drop from empty-workflow overlay', { err })
-        }
-      }
-
-      window.addEventListener(
-        'toolbar-drop-on-empty-workflow-overlay',
-        handleOverlayToolbarDrop as EventListener
-      )
-
-      return () =>
-        window.removeEventListener(
-          'toolbar-drop-on-empty-workflow-overlay',
-          handleOverlayToolbarDrop as EventListener
-        )
-    }, [screenToFlowPosition, handleToolbarDrop])
 
     /** Tracks blocks to pan to after diff updates. */
     const pendingZoomBlockIdsRef = useRef<Set<string> | null>(null)
@@ -5244,10 +5182,6 @@ const WorkflowContent = React.memo(
             )}
 
             {!embedded && <WorkflowSearchReplace />}
-
-            {!embedded && isWorkflowReady && isWorkflowEmpty && effectivePermissions.canEdit && (
-              <CommandList />
-            )}
 
             {!embedded && <DiffControls />}
           </div>
