@@ -45,7 +45,6 @@ import {
 } from '@/lib/api/contracts/copilot'
 import { getWorkflowNormalizedStateContract } from '@/lib/api/contracts/workflows'
 import { useSession } from '@/lib/auth/auth-client'
-import { getWorkspaceUsageLimitAction } from '@/lib/billing/workspace-permissions'
 import { useDeploymentShape } from '@/lib/core/config/deployment-shape'
 import {
   MOTHERSHIP_SEND_MESSAGE_EVENT,
@@ -58,7 +57,6 @@ import { MothershipChat } from '@/app/workspace/[workspaceId]/home/components'
 import { getWorkflowCopilotUseChatOptions, useChat } from '@/app/workspace/[workspaceId]/home/hooks'
 import type { FileAttachmentForApi } from '@/app/workspace/[workspaceId]/home/types'
 import { useRegisterGlobalCommands } from '@/app/workspace/[workspaceId]/providers/global-commands-provider'
-import { useWorkspaceHostContext } from '@/app/workspace/[workspaceId]/providers/workspace-host-provider'
 import { useUserPermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
 import { createCommands } from '@/app/workspace/[workspaceId]/utils/commands-utils'
 import {
@@ -69,12 +67,10 @@ import {
 import {
   getDefaultFloatRect,
   useFloatingPanel,
-  useUsageLimits,
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/hooks'
 import { Variables } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/variables/variables'
 import { useAutoLayout } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-auto-layout'
 import { useCurrentWorkflow } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-current-workflow'
-import { useWorkflowExecution } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution'
 import { getWorkflowLockToggleIds } from '@/app/workspace/[workspaceId]/w/[workflowId]/utils'
 import { useDeleteWorkflow, useImportWorkflow } from '@/app/workspace/[workspaceId]/w/hooks'
 import { useCopilotChatSelection } from '@/hooks/queries/copilot-chat-selection'
@@ -88,7 +84,6 @@ import { isWorkflowEffectivelyLocked } from '@/hooks/queries/utils/folder-tree'
 import { useDuplicateWorkflowMutation, useWorkflowMap } from '@/hooks/queries/workflows'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
 import { usePermissionConfig } from '@/hooks/use-permission-config'
-import { useSettingsNavigation } from '@/hooks/use-settings-navigation'
 import { useChatStore } from '@/stores/chat/store'
 import { useMothershipDraftsStore } from '@/stores/mothership-drafts/store'
 import type { ChatContext, PanelTab } from '@/stores/panel'
@@ -201,7 +196,6 @@ export const Panel = memo(function Panel() {
     focusSearch: () => void
   } | null>(null)
   const { data: session } = useSession()
-  const hostContext = useWorkspaceHostContext()
 
   // State
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -243,7 +237,6 @@ export const Panel = memo(function Panel() {
   const hasBlocks = useWorkflowStore((state) => Object.keys(state.blocks).length > 0)
 
   const { collaborativeBatchToggleLocked } = useCollaborativeWorkflow()
-  const { navigateToSettings } = useSettingsNavigation()
 
   // Delete workflow hook
   const { isDeleting, handleDeleteWorkflow } = useDeleteWorkflow({
@@ -252,62 +245,6 @@ export const Panel = memo(function Panel() {
     isActive: true,
     onSuccess: () => setIsDeleteModalOpen(false),
   })
-
-  // Usage limits hook
-  const {
-    usageExceeded,
-    message: usageLimitMessage,
-    scope: usageLimitScope,
-    isLoading: isUsageGateLoading,
-  } = useUsageLimits({ workspaceId })
-
-  // Workflow execution hook
-  const { handleRunWorkflow, handleCancelExecution, isExecuting } = useWorkflowExecution()
-
-  // Panel resize hook
-
-  /**
-   * Opens subscription settings modal
-   */
-  const openSubscriptionSettings = () => {
-    navigateToSettings({ section: 'billing' })
-  }
-
-  /**
-   * Cancels the currently executing workflow
-   */
-  const cancelWorkflow = useCallback(async () => {
-    await handleCancelExecution()
-  }, [handleCancelExecution])
-
-  /**
-   * Runs the workflow with usage limit check
-   */
-  const runWorkflow = useCallback(async () => {
-    if (isUsageGateLoading) return
-
-    if (usageExceeded) {
-      const action = getWorkspaceUsageLimitAction(hostContext, session?.user?.id, {
-        message: usageLimitMessage,
-        scope: usageLimitScope,
-      })
-      if (action.type === 'manage-billing') {
-        openSubscriptionSettings()
-      } else {
-        toast.error(action.message)
-      }
-      return
-    }
-    await handleRunWorkflow()
-  }, [
-    usageExceeded,
-    usageLimitMessage,
-    usageLimitScope,
-    isUsageGateLoading,
-    hostContext,
-    session?.user?.id,
-    handleRunWorkflow,
-  ])
 
   // Chat state
   const { isChatOpen, setIsChatOpen } = useChatStore(
@@ -606,7 +543,7 @@ export const Panel = memo(function Panel() {
    * Handles auto-layout of workflow blocks
    */
   const handleAutoLayout = useCallback(async () => {
-    if (isExecuting || !canMutateWorkflow || isAutoLayouting) {
+    if (!canMutateWorkflow || isAutoLayouting) {
       return
     }
 
@@ -619,7 +556,7 @@ export const Panel = memo(function Panel() {
     } finally {
       setIsAutoLayouting(false)
     }
-  }, [isExecuting, canMutateWorkflow, isAutoLayouting, autoLayoutWithFitView])
+  }, [canMutateWorkflow, isAutoLayouting, autoLayoutWithFitView])
 
   /**
    * Handles exporting workflow as JSON
@@ -707,32 +644,13 @@ export const Panel = memo(function Panel() {
     setIsMenuOpen(false)
   }, [collaborativeBatchToggleLocked])
 
-  const canRun = userPermissions.canRead
-  const isLoadingPermissions = userPermissions.isLoading
-  const isButtonDisabled =
-    !isExecuting && (isUsageGateLoading || (!canRun && !isLoadingPermissions))
-
   /**
    * Register global keyboard shortcuts using the central commands registry.
    *
-   * - Mod+Enter: Run / cancel workflow (matches the Run button behavior)
    * - Mod+F: Focus Toolbar tab and search input
    */
   useRegisterGlobalCommands(() =>
     createCommands([
-      {
-        id: 'run-workflow',
-        handler: () => {
-          if (isExecuting) {
-            void cancelWorkflow()
-          } else {
-            void runWorkflow()
-          }
-        },
-        overrides: {
-          allowInEditable: false,
-        },
-      },
       {
         id: 'focus-toolbar-search',
         handler: () => {
@@ -797,9 +715,7 @@ export const Panel = memo(function Panel() {
                 <DropdownMenuContent align='start' side='bottom' sideOffset={8}>
                   <DropdownMenuItem
                     onSelect={handleAutoLayout}
-                    disabled={
-                      isExecuting || !canMutateWorkflow || isAutoLayouting || hasLockedBlocks
-                    }
+                    disabled={!canMutateWorkflow || isAutoLayouting || hasLockedBlocks}
                     title={hasLockedBlocks ? 'Unlock blocks to use auto-layout' : undefined}
                   >
                     <Layout animate={isAutoLayouting} variant='clockwise' />

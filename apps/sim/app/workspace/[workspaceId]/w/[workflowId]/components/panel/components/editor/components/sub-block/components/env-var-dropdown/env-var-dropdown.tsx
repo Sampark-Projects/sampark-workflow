@@ -8,11 +8,8 @@ import {
   PopoverScrollArea,
   PopoverSection,
 } from '@sim/emcn'
-import { Plus } from '@sim/emcn/icons'
-import { writePendingCredentialCreateRequest } from '@/lib/credentials/client-state'
 import type { WorkspaceEnvironmentData } from '@/lib/environment/api'
 import { usePersonalEnvironment, useWorkspaceEnvironment } from '@/hooks/queries/environment'
-import { useSettingsNavigation } from '@/hooks/use-settings-navigation'
 
 /**
  * Props for the EnvVarDropdown component
@@ -117,8 +114,6 @@ export const EnvVarDropdown: React.FC<EnvVarDropdownProps> = ({
   maxHeight = 'none',
   inputRef,
 }) => {
-  const { navigateToSettings } = useSettingsNavigation()
-
   // React Query hooks for environment variables
   const { data: personalEnv = {} } = usePersonalEnvironment()
   const { data: workspaceEnvData } = useWorkspaceEnvironment(workspaceId || '', {
@@ -167,19 +162,6 @@ export const EnvVarDropdown: React.FC<EnvVarDropdownProps> = ({
   useEffect(() => {
     setSelectedIndex(0)
   }, [searchTerm])
-
-  const openEnvironmentSettings = () => {
-    if (workspaceId) {
-      writePendingCredentialCreateRequest({
-        workspaceId,
-        type: 'env_personal',
-        envKey: searchTerm.trim(),
-        requestedAt: Date.now(),
-      })
-    }
-    navigateToSettings({ section: 'secrets' })
-    onClose?.()
-  }
 
   const handleEnvVarSelect = (envVar: string) => {
     const textBeforeCursor = inputValue.slice(0, cursorPosition)
@@ -307,15 +289,7 @@ export const EnvVarDropdown: React.FC<EnvVarDropdownProps> = ({
       >
         {filteredEnvVars.length === 0 ? (
           <PopoverScrollArea>
-            <PopoverItem
-              onMouseDown={(e) => {
-                e.preventDefault()
-                openEnvironmentSettings()
-              }}
-            >
-              <Plus className='size-3' />
-              <span>Create Secret</span>
-            </PopoverItem>
+            <div className='px-2 py-1.5 text-[var(--text-muted)] text-small'>No secrets found</div>
           </PopoverScrollArea>
         ) : (
           <PopoverScrollArea>

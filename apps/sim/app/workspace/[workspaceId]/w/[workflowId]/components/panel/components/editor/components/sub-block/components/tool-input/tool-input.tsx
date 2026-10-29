@@ -80,7 +80,6 @@ import { useAvailableEnvVarKeys } from '@/hooks/use-available-env-vars'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
 import { useOperationAccess } from '@/hooks/use-operation-access'
 import { usePermissionConfig } from '@/hooks/use-permission-config'
-import { useSettingsNavigation } from '@/hooks/use-settings-navigation'
 import { supportsForcedToolUse } from '@/providers/models'
 import { getProviderFromModel, supportsToolUsageControl } from '@/providers/utils'
 import type { ActiveSearchTarget } from '@/stores/panel/editor/store'
@@ -473,7 +472,6 @@ export const ToolInput = memo(function ToolInput({
   const { data: mcpServers = [], isLoading: mcpServersLoading } = useMcpToolServers(workspaceId)
   const { data: storedMcpTools = [] } = useStoredMcpTools(workspaceId)
   const forceRefreshMcpTools = useForceRefreshMcpTools().mutate
-  const { navigateToSettings } = useSettingsNavigation()
   const createMcpServer = useCreateMcpServer()
   const { startOauthForServer } = useMcpOauthPopup({ workspaceId })
   const { data: allowedMcpDomains = null } = useAllowedMcpDomains()
@@ -1648,26 +1646,15 @@ export const ToolInput = memo(function ToolInput({
                     (() => {
                       const issue = getMcpToolIssue(tool)
                       if (!issue) return null
-                      const serverId = tool.params?.serverId
                       return (
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
-                            <Badge
-                              variant={getIssueBadgeVariant(issue)}
-                              className='cursor-pointer'
-                              size='sm'
-                              dot
-                              onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                                navigateToSettings({ section: 'mcp', mcpServerId: serverId })
-                              }}
-                            >
+                            <Badge variant={getIssueBadgeVariant(issue)} size='sm' dot>
                               {getIssueBadgeLabel(issue)}
                             </Badge>
                           </Tooltip.Trigger>
                           <Tooltip.Content>
-                            <span className='text-sm'>{issue.message}: click to open settings</span>
+                            <span className='text-sm'>{issue.message}</span>
                           </Tooltip.Content>
                         </Tooltip.Root>
                       )

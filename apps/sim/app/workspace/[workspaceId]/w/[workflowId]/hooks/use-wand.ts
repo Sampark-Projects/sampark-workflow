@@ -11,7 +11,6 @@ import { readSSEStream } from '@/lib/core/utils/sse'
 import { shouldStripCodeFences, stripCodeFences } from '@/lib/wand/strip-code-fences'
 import type { GenerationType } from '@/blocks/types'
 import { scheduleUsageRefresh } from '@/hooks/queries/utils/invalidate-usage'
-import { useSettingsNavigation } from '@/hooks/use-settings-navigation'
 import { useWorkflowRegistry } from '@/stores/workflows/registry/store'
 
 const logger = createLogger('useWand')
@@ -127,7 +126,6 @@ export function useWand({
   onStreamStart,
 }: UseWandProps) {
   const queryClient = useQueryClient()
-  const { navigateToSettings } = useSettingsNavigation()
   const { workspaceId } = useParams<{ workspaceId: string }>()
   const workflowId = useWorkflowRegistry((state) => state.hydration.workflowId)
   const [isLoading, setIsLoading] = useState(false)
@@ -305,20 +303,7 @@ export function useWand({
         if (error.name === 'AbortError') {
           logger.debug('Wand generation cancelled')
         } else if (isApiClientError(error) && error.status === 402) {
-          // A per-member cap is only raisable by an org admin, so skip the Upgrade
-          // affordance the member can't act on.
-          const isMemberLimit = (error.body as { scope?: string } | null)?.scope === 'member'
-          toast.error(
-            error.message || 'Usage limit reached',
-            isMemberLimit
-              ? undefined
-              : {
-                  action: {
-                    label: 'Upgrade',
-                    onClick: () => navigateToSettings({ section: 'billing' }),
-                  },
-                }
-          )
+          toast.error(error.message || 'Usage limit reached')
         } else {
           logger.error('Wand generation failed', { error })
           setError(error.message || 'Generation failed')
@@ -340,7 +325,6 @@ export function useWand({
       contextParams?.sandboxId,
       workflowId,
       workspaceId,
-      navigateToSettings,
     ]
   )
 
