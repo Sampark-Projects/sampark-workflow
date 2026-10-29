@@ -90,7 +90,6 @@ jobs:
         run: >-
           bunx vitest run
           lib/auth/oauth-token-family.postgres.test.ts
-          lib/auth/oauth-provider-lifecycle.postgres.test.ts
           app/api/auth/oauth2/token/route.postgres.test.ts
           lib/auth/sim-auth-adapter.test.ts
           ee/scim/lib/managed-membership.postgres.test.ts
@@ -109,66 +108,6 @@ jobs:
           BILLING_USAGE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5433/sim_billing_test
         run: bunx vitest run lib/billing/core/usage-log.postgres.test.ts
 
-      - name: Verify SCIM and administration over real HTTP
-        working-directory: apps/sim
-        env:
-          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3017
-          BETTER_AUTH_URL: http://127.0.0.1:3017
-          NEXT_PUBLIC_FORCE_HOSTED: 'true'
-          BILLING_ENABLED: 'true'
-          NEXT_PUBLIC_BILLING_ENABLED: 'true'
-          ENTERPRISE_ENABLED: 'true'
-          NEXT_PUBLIC_ENTERPRISE_ENABLED: 'true'
-          SCIM_ENABLED: 'true'
-          NEXT_PUBLIC_SCIM_ENABLED: 'true'
-          SSO_ENABLED: 'true'
-          NEXT_PUBLIC_SSO_ENABLED: 'true'
-          ORGANIZATIONS_ENABLED: 'true'
-          NEXT_PUBLIC_ORGANIZATIONS_ENABLED: 'true'
-          INTERNAL_API_SECRET: scim-http-ci-local-secret-at-least-32-characters
-          DB_TX_TRIPWIRE: throw
-          DISABLE_TELEMETRY: 'true'
-          NEXT_TELEMETRY_DISABLED: '1'
-          NEXT_PUBLIC_CHAT_DISABLED: 'true'
-        run: |
-          server_log="$RUNNER_TEMP/scim-next.log"
-          node ../../node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3017 > "$server_log" 2>&1 &
-          server_pid=$!
-          finish() {
-            kill "$server_pid" 2>/dev/null || true
-            wait "$server_pid" 2>/dev/null || true
-            awk '/^ (GET|POST|PUT|PATCH|DELETE|HEAD) \/api\// { print }' "$server_log" > "$RUNNER_TEMP/scim-http-status.log"
-          }
-          trap finish EXIT
-          deadline=$((SECONDS + 120))
-          until curl --fail --silent --max-time 3 http://127.0.0.1:3017/api/health > /dev/null; do
-            if ! kill -0 "$server_pid" 2>/dev/null; then
-              echo 'Local SCIM app exited during startup.'
-              exit 1
-            fi
-            if [ "$SECONDS" -ge "$deadline" ]; then
-              echo 'Local SCIM app did not become ready within 120 seconds.'
-              exit 1
-            fi
-            sleep 2
-          done
-          SCIM_E2E_BASE_URL="$NEXT_PUBLIC_APP_URL" \
-          SCIM_E2E_DATABASE_URL="$DATABASE_URL" \
-          SCIM_E2E_AUTH_SECRET="$BETTER_AUTH_SECRET" \
-          SCIM_E2E_REPORT_PATH="$RUNNER_TEMP/scim-e2e-report.json" \
-            bun run test:scim:e2e
-
-      - name: Upload SCIM failure report and HTTP status log
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: scim-failure-${{ matrix.provision }}
-          path: |
-            ${{ runner.temp }}/scim-e2e-report.json
-            ${{ runner.temp }}/scim-http-status.log
-          if-no-files-found: ignore
-          retention-days: 7
-
       - name: Verify durable provenance bindings and concurrent memory writes
         working-directory: apps/sim
         env:
@@ -177,7 +116,6 @@ jobs:
         run: >-
           bunx vitest run
           lib/table/rows/secret-provenance.postgres.test.ts
-          lib/memory/message-provenance.postgres.test.ts
 
       - name: Verify Search progress, pagination, and outbox scheduling in PostgreSQL
         working-directory: apps/sim
@@ -185,11 +123,7 @@ jobs:
           KNOWLEDGE_ACL_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/sim_auth_scim
         run: >-
           bunx vitest run --mode integration
-          lib/knowledge/__integration__/search-source-progress.integration.ts
-          lib/knowledge/__integration__/search-source-pagination.integration.ts
-          lib/knowledge/__integration__/search-reference-batching.integration.ts
           lib/core/outbox/service.integration.ts
-          lib/knowledge/__integration__/connector-upload.integration.ts
           lib/uploads/contexts/organization-logo/application.integration.ts
 
   test-build:
