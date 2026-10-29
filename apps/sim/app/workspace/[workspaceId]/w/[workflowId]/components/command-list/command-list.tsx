@@ -3,7 +3,6 @@
 import { useCallback } from 'react'
 import { Button, cn, handleKeyboardActivation } from '@sim/emcn'
 import { createLogger } from '@sim/logger'
-import Image from 'next/image'
 import { StartIcon } from '@/components/icons'
 import { usePreventZoom } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks'
 
@@ -133,21 +132,6 @@ export function CommandList() {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Logo */}
-        <div className='mb-5 flex justify-center'>
-          <Image
-            src='/logo/b&w/text/b&w.svg'
-            alt='Sim'
-            width={99.56}
-            height={48.56}
-            className='opacity-70'
-            style={{
-              filter:
-                'brightness(0) saturate(100%) invert(69%) sepia(0%) saturate(0%) hue-rotate(202deg) brightness(94%) contrast(89%)',
-            }}
-          />
-        </div>
-
         {commands.map((command) => {
           const Icon = command.icon
           const shortcuts = Array.isArray(command.shortcut) ? command.shortcut : [command.shortcut]

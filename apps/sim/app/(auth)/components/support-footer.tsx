@@ -19,6 +19,8 @@ export interface SupportFooterProps {
 export function SupportFooter({ position = 'fixed' }: SupportFooterProps) {
   const brandConfig = useBrandConfig()
 
+  if (!brandConfig.supportEmail) return null
+
   return (
     <div
       className={cn(

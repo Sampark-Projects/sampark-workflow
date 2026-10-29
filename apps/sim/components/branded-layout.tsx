@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { defaultBrandConfig } from '@/lib/branding'
 import { getBrandConfig } from '@/ee/whitelabeling'
 
 interface BrandedLayoutProps {
@@ -12,7 +13,7 @@ export function BrandedLayout({ children }: BrandedLayoutProps) {
     const config = getBrandConfig()
 
     // Update document title
-    if (config.name !== 'Sim') {
+    if (config.name !== defaultBrandConfig.name) {
       document.title = config.name
     }
 

@@ -4,14 +4,11 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { createLogger } from '@sim/logger'
 import { useParams } from 'next/navigation'
 import { useSession } from '@/lib/auth/auth-client'
-import { useDeploymentShape } from '@/lib/core/config/deployment-shape'
-import { isStatusNoticePreviewEnabled } from '@/lib/core/config/env-flags'
 import { LOGO_ACCEPT_ATTRIBUTE } from '@/lib/uploads/client/logo-file'
 import { useWorkspaceHostContext } from '@/app/workspace/[workspaceId]/providers/workspace-host-provider'
 import { useUserPermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
 import {
   SidebarVersion,
-  StatusNotice,
   WorkflowsMenu,
   WorkspaceHeader,
   WorkspaceTopBar,
@@ -51,7 +48,6 @@ export const Sidebar = memo(function Sidebar() {
 
   const { data: sessionData, isPending: sessionLoading } = useSession()
   const { workspace: routeWorkspace } = useWorkspaceHostContext()
-  const { hosted } = useDeploymentShape()
   const { canEdit } = useUserPermissionsContext()
 
   const { filterBlocks, isToolAllowed } = usePermissionConfig()
@@ -221,9 +217,6 @@ export const Sidebar = memo(function Sidebar() {
         }
         trailing={<SidebarVersion className='p-0' />}
       />
-      {hosted || isStatusNoticePreviewEnabled ? (
-        <StatusNotice preview={isStatusNoticePreviewEnabled} />
-      ) : null}
     </>
   )
 })

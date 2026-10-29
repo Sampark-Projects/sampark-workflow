@@ -1,5 +1,4 @@
 export { SidebarVersion } from './sidebar-version'
-export { StatusNotice } from './status-notice'
 export { WorkflowList } from './workflow-list'
 export { WorkflowsMenu } from './workflows-menu'
 export { WorkspaceHeader } from './workspace-header'
