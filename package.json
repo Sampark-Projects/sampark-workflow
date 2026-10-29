@@ -103,8 +103,6 @@
     "docs-manifest:check": "bun run scripts/sync-docs-manifest.ts --check",
     "mship:generate": "bun run scripts/generate-mship-contracts.ts",
     "mship:check": "bun run scripts/generate-mship-contracts.ts --check",
-    "library:covers": "bun run scripts/generate-library-covers.tsx",
-    "library:covers:check": "bun run scripts/generate-library-covers.tsx --check",
     "skills:sync": "bun run scripts/sync-skills.ts",
     "bump:npm-packages": "bun run scripts/bump-npm-package-versions.ts",
     "sim": "bun run packages/sim-cli/src/index.ts",

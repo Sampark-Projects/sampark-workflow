@@ -18,7 +18,7 @@
  * Usage: `bun run scripts/check-import-specifiers.ts [--verbose]`
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, normalize, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
@@ -101,7 +101,8 @@ function isFile(p: string): boolean {
 }
 
 /** `<base>`, `<base><ext>`, or `<base>/index<ext>`. */
-function probe(base: string): string | null {
+function probe(rawBase: string): string | null {
+  const base = normalize(rawBase)
   if (repositoryFiles.has(base)) return base
   for (const ext of EXTENSIONS) {
     if (repositoryFiles.has(base + ext)) return base + ext

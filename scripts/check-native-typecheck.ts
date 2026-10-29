@@ -35,7 +35,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 function resolveTsc(dir: string): string | null {
   let current = dir
   while (true) {
-    const candidate = path.join(current, 'node_modules', '.bin', 'tsc')
+    const candidate = path.join(
+      current,
+      'node_modules',
+      '.bin',
+      process.platform === 'win32' ? 'tsc.exe' : 'tsc'
+    )
     if (existsSync(candidate)) return candidate
     if (current === ROOT) return null
     const parent = path.dirname(current)
