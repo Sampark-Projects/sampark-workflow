@@ -12,7 +12,6 @@ import {
   cn,
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
   OverflowText,
   Skeleton,
@@ -647,8 +646,6 @@ function WorkspaceHeaderImpl({
                     )
                   })}
                 </div>
-
-                <DropdownMenuSeparator className='mx-0 mt-0' />
 
                 <div className='flex flex-col gap-0.5'>
                   <ViewInvitationsMenuItem

@@ -2,6 +2,9 @@
 
 import { createContext, type ReactNode, useContext, useMemo } from 'react'
 
+/** Where the chrome docks the sidebar: a left rail, or a bar across the top. */
+export type SidebarPlacement = 'left' | 'top'
+
 export interface SidebarChromeState {
   /**
    * Authoritative collapse state, derived once in `WorkspaceChrome` from the
@@ -16,6 +19,11 @@ export interface SidebarChromeState {
    * the chrome the card already provides (the title-bar lane, drag-resize).
    */
   isPeeking: boolean
+  /**
+   * Where the chrome docks the sidebar. `top` lays it out as a horizontal bar that is
+   * always expanded — collapse and peek never apply to it.
+   */
+  placement: SidebarPlacement
 }
 
 const SidebarChromeContext = createContext<SidebarChromeState | null>(null)
@@ -32,9 +40,13 @@ interface SidebarChromeProviderProps extends SidebarChromeState {
 export function SidebarChromeProvider({
   isCollapsed,
   isPeeking,
+  placement,
   children,
 }: SidebarChromeProviderProps) {
-  const value = useMemo(() => ({ isCollapsed, isPeeking }), [isCollapsed, isPeeking])
+  const value = useMemo(
+    () => ({ isCollapsed, isPeeking, placement }),
+    [isCollapsed, isPeeking, placement]
+  )
   return <SidebarChromeContext.Provider value={value}>{children}</SidebarChromeContext.Provider>
 }
 

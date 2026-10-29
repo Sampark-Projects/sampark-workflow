@@ -34,16 +34,20 @@ function clampSidebarWidth(width: number): number {
  * collapsed), whereas `--sidebar-expanded-width` always holds the width to restore to.
  * The desktop hover-peek needs the latter: it renders the sidebar at full width while
  * the rail itself is still collapsed to zero.
+ *
+ * While the sidebar is docked across the top (`data-sidebar-placement="top"` on the root,
+ * set by `WorkspaceChrome`) there is no rail, so `--sidebar-width` stays `0px` — the
+ * floats that measure their left inset from it must not reserve space for a rail that is
+ * not there.
  */
 function applySidebarWidths(expandedWidth: number, collapsed: boolean) {
   if (typeof window === 'undefined') return
   const expanded = Number.isFinite(expandedWidth) ? expandedWidth : SIDEBAR_WIDTH.DEFAULT
   const root = document.documentElement
+  const railWidth =
+    root.dataset.sidebarPlacement === 'top' ? 0 : collapsed ? getCollapsedSidebarWidth() : expanded
   root.style.setProperty('--sidebar-expanded-width', `${expanded}px`)
-  root.style.setProperty(
-    '--sidebar-width',
-    `${collapsed ? getCollapsedSidebarWidth() : expanded}px`
-  )
+  root.style.setProperty('--sidebar-width', `${railWidth}px`)
 }
 
 /** Reads the host-specific collapsed width established by the pre-paint layout script. */

@@ -10,18 +10,44 @@ import type { PanelState, PanelTab } from '@/stores/panel/types'
  */
 const DEFAULT_TAB: PanelTab = isChatEnabled ? 'copilot' : 'toolbar'
 
+/**
+ * Publishes the width the panel occupies in the layout as `--panel-width`. A collapsed or
+ * floating panel takes no room, so the variable reads `0px` and everything that measures
+ * from it (the canvas boundary, floats, the search palette) reclaims the space.
+ */
+function applyPanelWidth(width: number, occupiesLayout: boolean) {
+  if (typeof window === 'undefined') return
+  document.documentElement.style.setProperty('--panel-width', `${occupiesLayout ? width : 0}px`)
+}
+
 export const usePanelStore = create<PanelState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       panelWidth: PANEL_WIDTH.DEFAULT,
       setPanelWidth: (width) => {
         // Only enforce minimum - maximum is enforced dynamically by the resize hook
         const clampedWidth = Math.max(PANEL_WIDTH.MIN, width)
         set({ panelWidth: clampedWidth })
         // Update CSS variable for immediate visual feedback
-        if (typeof window !== 'undefined') {
-          document.documentElement.style.setProperty('--panel-width', `${clampedWidth}px`)
-        }
+        const { isCollapsed, isFloating } = get()
+        applyPanelWidth(clampedWidth, !isCollapsed && !isFloating)
+      },
+      isCollapsed: false,
+      toggleCollapsed: () => {
+        const { isCollapsed, isFloating, panelWidth } = get()
+        set({ isCollapsed: !isCollapsed })
+        applyPanelWidth(panelWidth, isCollapsed && !isFloating)
+      },
+      isFloating: false,
+      floatRect: null,
+      floatPanel: (rect) => {
+        set({ isFloating: true, isCollapsed: false, floatRect: rect })
+        applyPanelWidth(get().panelWidth, false)
+      },
+      setFloatRect: (rect) => set({ floatRect: rect }),
+      dockPanel: () => {
+        set({ isFloating: false, isCollapsed: false })
+        applyPanelWidth(get().panelWidth, true)
       },
       activeTab: DEFAULT_TAB,
       setActiveTab: (tab) => {
@@ -48,6 +74,9 @@ export const usePanelStore = create<PanelState>()(
       partialize: (state) => ({
         panelWidth: state.panelWidth,
         activeTab: state.activeTab,
+        isCollapsed: state.isCollapsed,
+        isFloating: state.isFloating,
+        floatRect: state.floatRect,
       }),
       /** The panel is fixed-width, so a width persisted from when it was resizable is dropped. */
       merge: (persisted, current) => ({
@@ -58,7 +87,7 @@ export const usePanelStore = create<PanelState>()(
       onRehydrateStorage: () => (state) => {
         // Sync CSS variables with stored state after rehydration
         if (state && typeof window !== 'undefined') {
-          document.documentElement.style.setProperty('--panel-width', `${state.panelWidth}px`)
+          applyPanelWidth(state.panelWidth, !state.isCollapsed && !state.isFloating)
           // Remove the data attribute so CSS rules stop interfering
           document.documentElement.removeAttribute('data-panel-active-tab')
         }

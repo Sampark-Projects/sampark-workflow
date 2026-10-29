@@ -8,6 +8,7 @@ export { useToolbarStore } from './toolbar'
 export type {
   BrowserTextSelection,
   ChatContext,
+  PanelFloatRect,
   PanelTab,
   TerminalTextSelection,
 } from './types'

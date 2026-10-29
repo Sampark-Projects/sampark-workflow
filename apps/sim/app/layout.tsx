@@ -169,6 +169,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     var panelParsed = JSON.parse(panelStored);
                     var panelState = panelParsed && panelParsed.state;
 
+                    // A collapsed or floating panel takes no room in the layout.
+                    if (panelState && (panelState.isCollapsed || panelState.isFloating)) {
+                      document.documentElement.style.setProperty('--panel-width', '0px');
+                    }
+
                     var activeTab = panelState && panelState.activeTab;
                     // A session that used the Chat tab before it was turned off still
                     // has 'copilot' persisted; without this the CSS hides every tab
@@ -196,25 +201,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         '--editor-connections-height',
                         connectionsHeight + 'px'
                       );
-                    }
-                  }
-                } catch (e) {
-                  // Fallback handled by CSS defaults
-                }
-
-                // Terminal height
-                try {
-                  var terminalStored = localStorage.getItem('terminal-state');
-                  if (terminalStored) {
-                    var terminalParsed = JSON.parse(terminalStored);
-                    var terminalState = terminalParsed && terminalParsed.state;
-                    var terminalHeight = terminalState && terminalState.terminalHeight;
-                    var maxTerminalHeight = window.innerHeight * 0.7;
-
-                    if (terminalHeight >= 30 && terminalHeight <= maxTerminalHeight) {
-                      document.documentElement.style.setProperty('--terminal-height', terminalHeight + 'px');
-                    } else if (terminalHeight > maxTerminalHeight) {
-                      document.documentElement.style.setProperty('--terminal-height', maxTerminalHeight + 'px');
                     }
                   }
                 } catch (e) {

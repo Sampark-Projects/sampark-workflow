@@ -6,7 +6,10 @@ import { ArrowLeft, ArrowRight, PanelLeft } from '@sim/emcn/icons'
 import { usePathname } from 'next/navigation'
 import { getDesktopBridge } from '@/lib/desktop'
 import { applyDesktopTitleBarMode, type DesktopTitleBarMode } from '@/app/_shell/desktop-title-bar'
-import { SidebarChromeProvider } from '@/app/workspace/[workspaceId]/components/workspace-chrome/sidebar-chrome-context'
+import {
+  SidebarChromeProvider,
+  type SidebarPlacement,
+} from '@/app/workspace/[workspaceId]/components/workspace-chrome/sidebar-chrome-context'
 import { useSidebarPeek } from '@/app/workspace/[workspaceId]/components/workspace-chrome/use-sidebar-peek'
 import { SidebarTooltip } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/sidebar-tooltip'
 import { useFullscreenOriginStore } from '@/stores/fullscreen-origin'
@@ -84,6 +87,11 @@ interface WorkspaceChromeProps {
   sidebar: ReactNode
   /** Cookie-derived collapse state from the server layout; seeds the sidebar's first render. */
   initialSidebarCollapsed?: boolean
+  /**
+   * Where the sidebar docks. `top` stacks it above the content as a full-width bar that
+   * never collapses or peeks; the default `left` keeps the rail beside the content.
+   */
+  sidebarPlacement?: SidebarPlacement
 }
 
 /** Chromium Navigation API slice (absent from TS lib.dom). */
@@ -180,9 +188,11 @@ export function WorkspaceChrome({
   children,
   sidebar,
   initialSidebarCollapsed = false,
+  sidebarPlacement = 'left',
 }: WorkspaceChromeProps) {
   const pathname = usePathname()
   const isFullscreen = isFullscreenPath(pathname)
+  const isTop = sidebarPlacement === 'top'
 
   const setOrigin = useFullscreenOriginStore((s) => s.setOrigin)
 
@@ -213,14 +223,14 @@ export function WorkspaceChrome({
    * store agree. The prop is used until the store hydrates (keeping the first
    * client render identical to the server), then the store takes over.
    */
-  const isCollapsed = hasHydrated ? storeIsCollapsed : initialSidebarCollapsed
+  const isCollapsed = !isTop && (hasHydrated ? storeIsCollapsed : initialSidebarCollapsed)
 
   /**
    * The hover-peek only exists where collapsing leaves nothing behind — the macOS
    * desktop shell. The web app keeps a 51px icon rail (with its own hover flyouts),
    * and native fullscreen falls back to that same rail.
    */
-  const peekEnabled = isCollapsed && !isFullscreen && titleBarMode === 'inset'
+  const peekEnabled = !isTop && isCollapsed && !isFullscreen && titleBarMode === 'inset'
   const { isPeekActive, isPeekOpen, cardRef, triggerRef, onTriggerEnter, onTriggerLeave } =
     useSidebarPeek(peekEnabled, isSearchModalOpen)
 
@@ -228,6 +238,22 @@ export function WorkspaceChrome({
   useLayoutEffect(() => {
     void useSidebarStore.persist.rehydrate()
   }, [])
+
+  /**
+   * A top-docked sidebar has no rail, so the store publishes `--sidebar-width: 0px` while
+   * the root carries this marker. Declared after the rehydrate above so its re-sync wins,
+   * and cleaned up so a surface that docks a rail again gets its width back.
+   */
+  useLayoutEffect(() => {
+    if (!isTop) return
+    const root = document.documentElement
+    root.dataset.sidebarPlacement = 'top'
+    useSidebarStore.getState().syncWidth()
+    return () => {
+      delete root.dataset.sidebarPlacement
+      useSidebarStore.getState().syncWidth()
+    }
+  }, [isTop])
 
   // Remember the last non-fullscreen page so a fullscreen route's Back control
   // can return there, deterministically and for any trigger.
@@ -249,7 +275,7 @@ export function WorkspaceChrome({
   useEffect(() => {
     return getDesktopBridge()?.onCommand?.((command) => {
       if (command === 'toggle-sidebar') {
-        useSidebarStore.getState().toggleCollapsed()
+        if (!isTop) useSidebarStore.getState().toggleCollapsed()
         return
       }
       // The shell's View > Search claims `Mod+K` before the renderer sees it, so
@@ -317,7 +343,10 @@ export function WorkspaceChrome({
 
   return (
     <div
-      className='desktop-workspace-window-frame relative flex min-h-0 flex-1'
+      className={cn(
+        'desktop-workspace-window-frame relative flex min-h-0 flex-1',
+        isTop && 'flex-col'
+      )}
       data-sidebar-collapsed={isCollapsed || undefined}
     >
       <div
@@ -333,14 +362,19 @@ export function WorkspaceChrome({
           'sidebar-shell-outer shrink-0 overflow-hidden',
           hasHydrated &&
             !isPeekActive &&
+            !isTop &&
             'transition-[width] duration-175 ease-[cubic-bezier(0.25,0.1,0.25,1)] data-[resizing]:transition-none motion-reduce:transition-none',
           isPeekActive
             ? isPeekOpen
               ? PEEK_CARD_ENTER
               : PEEK_CARD_EXIT
-            : isFullscreen
-              ? 'w-0'
-              : 'w-[var(--sidebar-width)]'
+            : isTop
+              ? isFullscreen
+                ? 'hidden'
+                : 'w-full'
+              : isFullscreen
+                ? 'w-0'
+                : 'w-[var(--sidebar-width)]'
         )}
         data-collapsed={isCollapsed || undefined}
         data-peek={isPeekActive || undefined}
@@ -354,7 +388,11 @@ export function WorkspaceChrome({
             isPeekActive ? 'w-[var(--sidebar-width)]' : 'w-full'
           )}
         >
-          <SidebarChromeProvider isCollapsed={isCollapsed} isPeeking={isPeekActive}>
+          <SidebarChromeProvider
+            isCollapsed={isCollapsed}
+            isPeeking={isPeekActive}
+            placement={sidebarPlacement}
+          >
             {sidebar}
           </SidebarChromeProvider>
         </div>
@@ -370,13 +408,13 @@ export function WorkspaceChrome({
           className={cn(
             'flex-1 overflow-hidden bg-[var(--bg)]',
             CONTENT_PANE_DIVIDER,
-            isFullscreen && 'border-l-0'
+            (isFullscreen || isTop) && 'border-l-0'
           )}
         >
           {children}
         </div>
       </div>
-      {!isFullscreen && (
+      {!isFullscreen && !isTop && (
         /**
          * The hover region lives on this wrapper, not the button: `SidebarTooltip`
          * returns bare `children` when disabled, so suppressing the tooltip while
@@ -412,7 +450,7 @@ export function WorkspaceChrome({
           </SidebarTooltip>
         </div>
       )}
-      {!isFullscreen && <TitleBarHistoryNav />}
+      {!isFullscreen && !isTop && <TitleBarHistoryNav />}
     </div>
   )
 }

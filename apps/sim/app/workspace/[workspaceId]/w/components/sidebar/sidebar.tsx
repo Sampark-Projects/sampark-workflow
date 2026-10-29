@@ -50,7 +50,9 @@ import {
   SidebarVersion,
   StatusNotice,
   WorkflowList,
+  WorkflowsMenu,
   WorkspaceHeader,
+  WorkspaceTopBar,
 } from '@/app/workspace/[workspaceId]/w/components/sidebar/components'
 import {
   buildConnectedAccountSearchItems,
@@ -333,8 +335,9 @@ const DRAG_EXEMPT_CLASS = '[-webkit-app-region:no-drag]'
  * @returns Sidebar with workflows panel
  */
 export const Sidebar = memo(function Sidebar() {
-  const { isCollapsed: isCollapsedProp, isPeeking } = useSidebarChrome()
-  const isCollapsed = isCollapsedProp && !isPeeking
+  const { isCollapsed: isCollapsedProp, isPeeking, placement } = useSidebarChrome()
+  const isTop = placement === 'top'
+  const isCollapsed = isCollapsedProp && !isPeeking && !isTop
   const params = useParams()
   const workspaceId = params.workspaceId as string
   const workflowId = params.workflowId as string | undefined
@@ -1040,6 +1043,27 @@ export const Sidebar = memo(function Sidebar() {
     return parts[idx + 1]
   }, [workspaceId])
 
+  const workspaceHeader = (
+    <WorkspaceHeader
+      activeWorkspace={activeWorkspace ?? routeWorkspace}
+      workspaceId={workspaceId}
+      workspaces={workspaces}
+      pinnedWorkspaceIds={pinnedWorkspaceIds}
+      onToggleWorkspacePin={toggleWorkspacePin}
+      isWorkspacesLoading={isWorkspacesLoading}
+      isWorkspaceMenuOpen={isWorkspaceMenuOpen}
+      setIsWorkspaceMenuOpen={setIsWorkspaceMenuOpen}
+      onWorkspaceSwitch={handleWorkspaceSwitch}
+      onRenameWorkspace={handleRenameWorkspace}
+      onUploadLogo={handleUploadLogo}
+      onLeaveWorkspace={handleLeaveWorkspaceWrapper}
+      isLeavingWorkspace={isLeavingWorkspace}
+      sessionUserId={sessionData?.user?.id}
+      isCollapsed={isCollapsed}
+      onExpandSidebar={toggleCollapsed}
+    />
+  )
+
   useRegisterGlobalCommands(() =>
     createCommands([
       {
@@ -1083,7 +1107,7 @@ export const Sidebar = memo(function Sidebar() {
       {
         id: 'toggle-sidebar',
         handler: () => {
-          toggleCollapsed()
+          if (!isTop) toggleCollapsed()
         },
       },
     ])
@@ -1106,258 +1130,266 @@ export const Sidebar = memo(function Sidebar() {
         className='hidden'
         onChange={handleImportFileChange}
       />
-      <div className='relative h-full'>
-        <aside
-          className='group/rail sidebar-container relative h-full overflow-hidden bg-[var(--surface-1)] [&_.group.cursor-pointer]:duration-0'
-          data-collapsed={isCollapsed || undefined}
-          aria-label='Workspace sidebar'
-          onClick={handleSidebarClick}
-        >
-          <div className='flex h-full flex-col'>
-            {/* The peek card already sits below the lane; reserving it again doubles the offset. */}
-            {!isPeeking && (
-              <div
-                aria-hidden
-                className='desktop-window-drag-region desktop-workspace-window-drag-region h-[var(--desktop-title-bar-height)]'
-              />
-            )}
-            <div
-              className={cn(
-                'relative flex shrink-0 items-center px-2 pt-2',
-                !isPeeking &&
-                  '[[data-sim-desktop-title-bar=inset]_&]:pt-[var(--desktop-title-bar-height)]'
-              )}
-            >
-              <WorkspaceHeader
-                activeWorkspace={activeWorkspace ?? routeWorkspace}
+      {isTop ? (
+        <>
+          <WorkspaceTopBar
+            workspaceSwitcher={workspaceHeader}
+            navigationLabel='Workflow'
+            navigation={
+              <WorkflowsMenu
                 workspaceId={workspaceId}
-                workspaces={workspaces}
-                pinnedWorkspaceIds={pinnedWorkspaceIds}
-                onToggleWorkspacePin={toggleWorkspacePin}
-                isWorkspacesLoading={isWorkspacesLoading}
-                isWorkspaceMenuOpen={isWorkspaceMenuOpen}
-                setIsWorkspaceMenuOpen={setIsWorkspaceMenuOpen}
-                onWorkspaceSwitch={handleWorkspaceSwitch}
-                onRenameWorkspace={handleRenameWorkspace}
-                onUploadLogo={handleUploadLogo}
-                onLeaveWorkspace={handleLeaveWorkspaceWrapper}
-                isLeavingWorkspace={isLeavingWorkspace}
-                sessionUserId={sessionData?.user?.id}
-                isCollapsed={isCollapsed}
-                onExpandSidebar={toggleCollapsed}
+                workflowId={workflowId}
+                regularWorkflows={regularWorkflows}
+                isLoading={isLoading}
+                canReorder={canEdit}
+                scrollContainerRef={scrollContainerRef}
               />
-              {/*
-               * The trailing chips collapse as one cluster rather than individually: a
-               * chip's own `px-2` still renders under border-box, so `w-0` on the chip
-               * would leave a 16px stub — the width has to sit on an unpadded wrapper.
-               *
-               * Chips carry no outer margin, so the gap here is the whole distance
-               * between them. `gap-[1px]` rather than `gap-px`: the `px` spacing key
-               * is remapped to `--border-width`, which thins to 0.5px on hidpi so
-               * hairline rules stay hairlines.
-               *
-               * The expanded width is EXPLICIT (2 icon chips × 32px + the 1px gap;
-               * 32px when the desktop inset title bar hides the collapse chip) so the
-               * cluster never claims more than its chips: it refuses to flex-shrink
-               * (min-width: auto) while the workspace chip's wrapper is `min-w-0
-               * flex-1`, so an `auto` width would crush the workspace chip instead.
-               */}
+            }
+            trailing={<SidebarVersion className='p-0' />}
+          />
+          {hosted || isStatusNoticePreviewEnabled ? (
+            <StatusNotice preview={isStatusNoticePreviewEnabled} />
+          ) : null}
+        </>
+      ) : (
+        <div className='relative h-full'>
+          <aside
+            className='group/rail sidebar-container relative h-full overflow-hidden bg-[var(--surface-1)] [&_.group.cursor-pointer]:duration-0'
+            data-collapsed={isCollapsed || undefined}
+            aria-label='Workspace sidebar'
+            onClick={handleSidebarClick}
+          >
+            <div className='flex h-full flex-col'>
+              {/* The peek card already sits below the lane; reserving it again doubles the offset. */}
+              {!isPeeking && (
+                <div
+                  aria-hidden
+                  className='desktop-window-drag-region desktop-workspace-window-drag-region h-[var(--desktop-title-bar-height)]'
+                />
+              )}
               <div
-                inert={isCollapsed}
                 className={cn(
-                  'flex h-[30px] items-center gap-[1px] overflow-hidden',
-                  isCollapsed ? 'w-0 opacity-0' : 'w-[32px]'
+                  'relative flex shrink-0 items-center px-2 pt-2',
+                  !isPeeking &&
+                    '[[data-sim-desktop-title-bar=inset]_&]:pt-[var(--desktop-title-bar-height)]'
                 )}
               >
-                <SidebarTooltip
-                  label='Collapse sidebar'
-                  enabled={!isCollapsed}
-                  side='bottom'
-                  shortcut={isMac ? '⌘B' : 'Ctrl+B'}
-                >
-                  <Chip
-                    leftIcon={PanelLeft}
-                    aria-label='Collapse sidebar'
-                    onClick={toggleCollapsed}
-                    tabIndex={isCollapsed ? -1 : undefined}
-                    className={cn(
-                      DRAG_EXEMPT_CLASS,
-                      '[[data-sim-desktop-title-bar=inset]_&]:hidden'
-                    )}
-                  />
-                </SidebarTooltip>
-              </div>
-            </div>
-
-            {isOnSettingsPage ? (
-              <SettingsSidebar
-                isCollapsed={isCollapsed}
-                showCollapsedTooltips={showCollapsedTooltips}
-              />
-            ) : (
-              <>
+                {workspaceHeader}
+                {/*
+                 * The trailing chips collapse as one cluster rather than individually: a
+                 * chip's own `px-2` still renders under border-box, so `w-0` on the chip
+                 * would leave a 16px stub — the width has to sit on an unpadded wrapper.
+                 *
+                 * Chips carry no outer margin, so the gap here is the whole distance
+                 * between them. `gap-[1px]` rather than `gap-px`: the `px` spacing key
+                 * is remapped to `--border-width`, which thins to 0.5px on hidpi so
+                 * hairline rules stay hairlines.
+                 *
+                 * The expanded width is EXPLICIT (2 icon chips × 32px + the 1px gap;
+                 * 32px when the desktop inset title bar hides the collapse chip) so the
+                 * cluster never claims more than its chips: it refuses to flex-shrink
+                 * (min-width: auto) while the workspace chip's wrapper is `min-w-0
+                 * flex-1`, so an `auto` width would crush the workspace chip instead.
+                 */}
                 <div
-                  ref={isCollapsed ? undefined : scrollContainerRef}
+                  inert={isCollapsed}
                   className={cn(
-                    SIDEBAR_DIVIDER_PAD_BELOW_CLASS,
-                    SIDEBAR_DIVIDER_PAD_ABOVE_CLASS,
-                    scrollFadeClass,
-                    'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden'
+                    'flex h-[30px] items-center gap-[1px] overflow-hidden',
+                    isCollapsed ? 'w-0 opacity-0' : 'w-[32px]'
                   )}
-                  {...scrollFadeAttributes(scrollEdges)}
                 >
-                  <div ref={scrollContentRef} className='flex flex-col'>
-                    <SidebarSection
-                      title='Workflows'
-                      railCollapsed={isCollapsed}
-                      className={cn(SIDEBAR_SECTION_GAP_CLASS, 'workflows-section relative')}
-                    >
-                      {isCollapsed ? (
-                        <div className='px-2'>
-                          <CollapsedSidebarMenu
-                            icon={workflowsCollapsedIcon}
-                            hover={workflowsHover}
-                            ariaLabel='Workflows'
-                            isEditing={!!workflowFlyoutRename.editingId}
-                          >
-                            {workflowsLoading && regularWorkflows.length === 0 ? (
-                              <DropdownMenuItem disabled>
-                                <Loader className='size-[14px]' animate />
-                                Loading...
-                              </DropdownMenuItem>
-                            ) : regularWorkflows.length === 0 ? (
-                              <DropdownMenuItem disabled>No workflows yet</DropdownMenuItem>
-                            ) : (
-                              <>
-                                {collapsedRootItems.map((item) =>
-                                  item.kind === 'folder' ? (
-                                    <CollapsedFolderItems
-                                      key={item.id}
-                                      nodes={[item.node]}
-                                      workflowsByFolder={workflowsByFolder}
-                                      workspaceId={workspaceId}
-                                      currentWorkflowId={workflowId}
-                                      editingWorkflowId={workflowFlyoutRename.editingId}
-                                      editingValue={workflowFlyoutRename.value}
-                                      editInputRef={workflowFlyoutRename.inputRef}
-                                      isRenamingWorkflow={workflowFlyoutRename.isSaving}
-                                      onEditValueChange={workflowFlyoutRename.setValue}
-                                      onEditKeyDown={workflowFlyoutRename.handleKeyDown}
-                                      onEditBlur={handleWorkflowRenameBlur}
-                                      onWorkflowOpenInNewTab={handleCollapsedWorkflowOpenInNewTab}
-                                    />
-                                  ) : (
-                                    <CollapsedWorkflowFlyoutItem
-                                      key={item.id}
-                                      workflow={item.workflow}
-                                      href={`/workspace/${workspaceId}/w/${item.workflow.id}`}
-                                      isCurrentRoute={item.workflow.id === workflowId}
-                                      isEditing={
-                                        item.workflow.id === workflowFlyoutRename.editingId
-                                      }
-                                      editValue={workflowFlyoutRename.value}
-                                      inputRef={workflowFlyoutRename.inputRef}
-                                      isRenaming={workflowFlyoutRename.isSaving}
-                                      onEditValueChange={workflowFlyoutRename.setValue}
-                                      onEditKeyDown={workflowFlyoutRename.handleKeyDown}
-                                      onEditBlur={handleWorkflowRenameBlur}
-                                      onOpenInNewTab={() =>
-                                        handleCollapsedWorkflowOpenInNewTab(item.workflow)
-                                      }
-                                    />
-                                  )
-                                )}
-                              </>
-                            )}
-                          </CollapsedSidebarMenu>
-                        </div>
-                      ) : (
-                        <div className='px-2'>
-                          {workflowsLoading && regularWorkflows.length === 0 ? (
-                            <SidebarItemSkeleton />
-                          ) : (
-                            <WorkflowList
-                              workspaceId={workspaceId}
-                              workflowId={workflowId}
-                              regularWorkflows={regularWorkflows}
-                              isLoading={isLoading}
-                              canReorder={canEdit}
-                              scrollContainerRef={scrollContainerRef}
-                            />
-                          )}
-                        </div>
+                  <SidebarTooltip
+                    label='Collapse sidebar'
+                    enabled={!isCollapsed}
+                    side='bottom'
+                    shortcut={isMac ? '⌘B' : 'Ctrl+B'}
+                  >
+                    <Chip
+                      leftIcon={PanelLeft}
+                      aria-label='Collapse sidebar'
+                      onClick={toggleCollapsed}
+                      tabIndex={isCollapsed ? -1 : undefined}
+                      className={cn(
+                        DRAG_EXEMPT_CLASS,
+                        '[[data-sim-desktop-title-bar=inset]_&]:hidden'
                       )}
-                    </SidebarSection>
-                  </div>
+                    />
+                  </SidebarTooltip>
                 </div>
+              </div>
 
-                {(hosted || isStatusNoticePreviewEnabled) && !isCollapsed ? (
-                  <StatusNotice preview={isStatusNoticePreviewEnabled} />
-                ) : null}
-
-                <NavItemContextMenu
-                  isOpen={isNavContextMenuOpen}
-                  position={navContextMenuPosition}
-                  menuRef={navMenuRef}
-                  onClose={handleNavContextMenuClose}
-                  onOpenInNewTab={handleNavOpenInNewTab}
-                  onCopyLink={handleNavCopyLink}
+              {isOnSettingsPage ? (
+                <SettingsSidebar
+                  isCollapsed={isCollapsed}
+                  showCollapsedTooltips={showCollapsedTooltips}
                 />
+              ) : (
+                <>
+                  <div
+                    ref={isCollapsed ? undefined : scrollContainerRef}
+                    className={cn(
+                      SIDEBAR_DIVIDER_PAD_BELOW_CLASS,
+                      SIDEBAR_DIVIDER_PAD_ABOVE_CLASS,
+                      scrollFadeClass,
+                      'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden'
+                    )}
+                    {...scrollFadeAttributes(scrollEdges)}
+                  >
+                    <div ref={scrollContentRef} className='flex flex-col'>
+                      <SidebarSection
+                        title='Workflows'
+                        railCollapsed={isCollapsed}
+                        className={cn(SIDEBAR_SECTION_GAP_CLASS, 'workflows-section relative')}
+                      >
+                        {isCollapsed ? (
+                          <div className='px-2'>
+                            <CollapsedSidebarMenu
+                              icon={workflowsCollapsedIcon}
+                              hover={workflowsHover}
+                              ariaLabel='Workflows'
+                              isEditing={!!workflowFlyoutRename.editingId}
+                            >
+                              {workflowsLoading && regularWorkflows.length === 0 ? (
+                                <DropdownMenuItem disabled>
+                                  <Loader className='size-[14px]' animate />
+                                  Loading...
+                                </DropdownMenuItem>
+                              ) : regularWorkflows.length === 0 ? (
+                                <DropdownMenuItem disabled>No workflows yet</DropdownMenuItem>
+                              ) : (
+                                <>
+                                  {collapsedRootItems.map((item) =>
+                                    item.kind === 'folder' ? (
+                                      <CollapsedFolderItems
+                                        key={item.id}
+                                        nodes={[item.node]}
+                                        workflowsByFolder={workflowsByFolder}
+                                        workspaceId={workspaceId}
+                                        currentWorkflowId={workflowId}
+                                        editingWorkflowId={workflowFlyoutRename.editingId}
+                                        editingValue={workflowFlyoutRename.value}
+                                        editInputRef={workflowFlyoutRename.inputRef}
+                                        isRenamingWorkflow={workflowFlyoutRename.isSaving}
+                                        onEditValueChange={workflowFlyoutRename.setValue}
+                                        onEditKeyDown={workflowFlyoutRename.handleKeyDown}
+                                        onEditBlur={handleWorkflowRenameBlur}
+                                        onWorkflowOpenInNewTab={handleCollapsedWorkflowOpenInNewTab}
+                                      />
+                                    ) : (
+                                      <CollapsedWorkflowFlyoutItem
+                                        key={item.id}
+                                        workflow={item.workflow}
+                                        href={`/workspace/${workspaceId}/w/${item.workflow.id}`}
+                                        isCurrentRoute={item.workflow.id === workflowId}
+                                        isEditing={
+                                          item.workflow.id === workflowFlyoutRename.editingId
+                                        }
+                                        editValue={workflowFlyoutRename.value}
+                                        inputRef={workflowFlyoutRename.inputRef}
+                                        isRenaming={workflowFlyoutRename.isSaving}
+                                        onEditValueChange={workflowFlyoutRename.setValue}
+                                        onEditKeyDown={workflowFlyoutRename.handleKeyDown}
+                                        onEditBlur={handleWorkflowRenameBlur}
+                                        onOpenInNewTab={() =>
+                                          handleCollapsedWorkflowOpenInNewTab(item.workflow)
+                                        }
+                                      />
+                                    )
+                                  )}
+                                </>
+                              )}
+                            </CollapsedSidebarMenu>
+                          </div>
+                        ) : (
+                          <div className='px-2'>
+                            {workflowsLoading && regularWorkflows.length === 0 ? (
+                              <SidebarItemSkeleton />
+                            ) : (
+                              <WorkflowList
+                                workspaceId={workspaceId}
+                                workflowId={workflowId}
+                                regularWorkflows={regularWorkflows}
+                                isLoading={isLoading}
+                                canReorder={canEdit}
+                                scrollContainerRef={scrollContainerRef}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </SidebarSection>
+                    </div>
+                  </div>
 
-                <ContextMenu
-                  isOpen={isChatContextMenuOpen}
-                  position={chatContextMenuPosition}
-                  menuRef={chatMenuRef}
-                  onClose={closeChatContextMenu}
-                  onOpenInNewTab={handleChatOpenInNewTab}
-                  onMarkAsRead={handleMarkChatAsRead}
-                  onMarkAsUnread={handleMarkChatAsUnread}
-                  onTogglePin={handleToggleChatPin}
-                  onRename={handleStartChatRename}
-                  onDelete={handleDeleteChat}
-                  showOpenInNewTab={!isMultiChatContextMenu}
-                  showMarkAsRead={!isMultiChatContextMenu && !!activeChatContextMenuItem?.isUnread}
-                  showMarkAsUnread={
-                    !isMultiChatContextMenu &&
-                    !!activeChatContextMenuItem &&
-                    !activeChatContextMenuItem.isUnread
-                  }
-                  showPin={!isMultiChatContextMenu && !!activeChatContextMenuItem}
-                  isPinned={!!activeChatContextMenuItem?.isPinned}
-                  showRename={!isMultiChatContextMenu}
-                  showDuplicate={false}
-                  disableRename={!canEdit}
-                  disableDelete={!canEdit}
-                  selectedCount={contextMenuSelectionRef.current.chatIds.length}
-                />
+                  {(hosted || isStatusNoticePreviewEnabled) && !isCollapsed ? (
+                    <StatusNotice preview={isStatusNoticePreviewEnabled} />
+                  ) : null}
 
-                <DeleteModal
-                  isOpen={isChatDeleteModalOpen}
-                  onClose={handleCloseChatDeleteModal}
-                  onConfirm={handleConfirmDeleteChats}
-                  isDeleting={deleteChatMutation.isPending || deleteChatsMutation.isPending}
-                  itemType='task'
-                  itemName={contextMenuSelectionRef.current.names}
-                />
-              </>
-            )}
+                  <NavItemContextMenu
+                    isOpen={isNavContextMenuOpen}
+                    position={navContextMenuPosition}
+                    menuRef={navMenuRef}
+                    onClose={handleNavContextMenuClose}
+                    onOpenInNewTab={handleNavOpenInNewTab}
+                    onCopyLink={handleNavCopyLink}
+                  />
 
-            <SidebarVersion />
-          </div>
-        </aside>
+                  <ContextMenu
+                    isOpen={isChatContextMenuOpen}
+                    position={chatContextMenuPosition}
+                    menuRef={chatMenuRef}
+                    onClose={closeChatContextMenu}
+                    onOpenInNewTab={handleChatOpenInNewTab}
+                    onMarkAsRead={handleMarkChatAsRead}
+                    onMarkAsUnread={handleMarkChatAsUnread}
+                    onTogglePin={handleToggleChatPin}
+                    onRename={handleStartChatRename}
+                    onDelete={handleDeleteChat}
+                    showOpenInNewTab={!isMultiChatContextMenu}
+                    showMarkAsRead={
+                      !isMultiChatContextMenu && !!activeChatContextMenuItem?.isUnread
+                    }
+                    showMarkAsUnread={
+                      !isMultiChatContextMenu &&
+                      !!activeChatContextMenuItem &&
+                      !activeChatContextMenuItem.isUnread
+                    }
+                    showPin={!isMultiChatContextMenu && !!activeChatContextMenuItem}
+                    isPinned={!!activeChatContextMenuItem?.isPinned}
+                    showRename={!isMultiChatContextMenu}
+                    showDuplicate={false}
+                    disableRename={!canEdit}
+                    disableDelete={!canEdit}
+                    selectedCount={contextMenuSelectionRef.current.chatIds.length}
+                  />
 
-        {/* The expanded rail is fixed-width, so the edge exists only to expand a collapsed one. */}
-        {!isPeeking && isCollapsed && (
-          <div
-            className='absolute top-0 right-0 bottom-0 z-20 w-[8px] translate-x-1/2 cursor-e-resize'
-            onClick={toggleCollapsed}
-            onKeyDown={handleEdgeKeyDown}
-            role='button'
-            tabIndex={0}
-            aria-label='Expand sidebar'
-          />
-        )}
-      </div>
+                  <DeleteModal
+                    isOpen={isChatDeleteModalOpen}
+                    onClose={handleCloseChatDeleteModal}
+                    onConfirm={handleConfirmDeleteChats}
+                    isDeleting={deleteChatMutation.isPending || deleteChatsMutation.isPending}
+                    itemType='task'
+                    itemName={contextMenuSelectionRef.current.names}
+                  />
+                </>
+              )}
+
+              <SidebarVersion />
+            </div>
+          </aside>
+
+          {/* The expanded rail is fixed-width, so the edge exists only to expand a collapsed one. */}
+          {!isPeeking && isCollapsed && (
+            <div
+              className='absolute top-0 right-0 bottom-0 z-20 w-[8px] translate-x-1/2 cursor-e-resize'
+              onClick={toggleCollapsed}
+              onKeyDown={handleEdgeKeyDown}
+              role='button'
+              tabIndex={0}
+              aria-label='Expand sidebar'
+            />
+          )}
+        </div>
+      )}
 
       <SearchModal
         open={isSearchModalOpen}

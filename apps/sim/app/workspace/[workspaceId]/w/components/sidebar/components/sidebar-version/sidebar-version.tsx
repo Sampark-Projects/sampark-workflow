@@ -1,4 +1,11 @@
+import { cn } from '@sim/emcn'
+
 const APP_VERSION = '1.0.0'
+
+interface SidebarVersionProps {
+  /** Overrides the wrapper's gutters, e.g. `p-0` when it sits inline in the top bar. */
+  className?: string
+}
 
 /**
  * Release version pinned to the foot of the workspace sidebar.
@@ -8,9 +15,9 @@ const APP_VERSION = '1.0.0'
  * drops its gutters and centers, because the rail's 48px minus two 8px gutters
  * leaves 32px — a hair narrower than the text.
  */
-export function SidebarVersion() {
+export function SidebarVersion({ className }: SidebarVersionProps) {
   return (
-    <div className='shrink-0 px-2 pb-2 group-data-[collapsed]/rail:px-0'>
+    <div className={cn('shrink-0 px-2 pb-2 group-data-[collapsed]/rail:px-0', className)}>
       <p className='whitespace-nowrap px-2 text-[var(--text-muted)] text-micro leading-4 group-data-[collapsed]/rail:px-0 group-data-[collapsed]/rail:text-center'>
         v{APP_VERSION}
       </p>

@@ -102,16 +102,12 @@ export const useTerminalStore = create<TerminalState>()(
         structuredView: state.structuredView,
       }),
       /**
-       * Synchronizes the `--terminal-height` and `--output-panel-width` CSS
-       * custom properties with the persisted store values after client-side
-       * rehydration.
+       * Synchronizes the `--output-panel-width` CSS custom property with the persisted
+       * store value after client-side rehydration. `--terminal-height` is deliberately not
+       * published: the terminal is not rendered, so it reserves no bottom space.
        */
       onRehydrateStorage: () => (state) => {
         if (state && typeof window !== 'undefined') {
-          document.documentElement.style.setProperty(
-            '--terminal-height',
-            `${state.terminalHeight}px`
-          )
           document.documentElement.style.setProperty(
             '--output-panel-width',
             `${state.outputPanelWidth}px`

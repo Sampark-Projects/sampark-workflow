@@ -5,12 +5,33 @@ import type { ManagedMcpConnectorId } from '@/lib/credential-groups/managed-mcp-
  */
 export type PanelTab = 'copilot' | 'editor' | 'toolbar'
 
+/** Viewport-relative rectangle of the panel while it is detached into a floating window. */
+export interface PanelFloatRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 /**
  * Panel state interface
  */
 export interface PanelState {
   panelWidth: number
   setPanelWidth: (width: number) => void
+  /** True while the docked panel is hidden; the canvas reclaims its width. */
+  isCollapsed: boolean
+  toggleCollapsed: () => void
+  /** True while the panel is detached into a floating window instead of docked. */
+  isFloating: boolean
+  /** Last position and size of the floating window; null until it has been detached once. */
+  floatRect: PanelFloatRect | null
+  /** Detaches the panel into a floating window at `rect`. */
+  floatPanel: (rect: PanelFloatRect) => void
+  /** Moves or resizes the floating window. */
+  setFloatRect: (rect: PanelFloatRect) => void
+  /** Re-docks a floating panel. */
+  dockPanel: () => void
   activeTab: PanelTab
   setActiveTab: (tab: PanelTab) => void
   _hasHydrated: boolean

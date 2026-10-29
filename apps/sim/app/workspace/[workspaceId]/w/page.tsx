@@ -6,7 +6,7 @@ import { createLogger } from '@sim/logger'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useParams, useRouter } from 'next/navigation'
 import { useUserPermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
-import { Panel, Terminal } from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
+import { Panel } from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
 import { useWorkflowOperations } from '@/app/workspace/[workspaceId]/w/components/sidebar/hooks'
 import { useWorkflows } from '@/hooks/queries/workflows'
 
@@ -111,7 +111,6 @@ export default function WorkflowsPage() {
           <Panel />
         </ReactFlowProvider>
       </div>
-      <Terminal />
     </div>
   )
 }

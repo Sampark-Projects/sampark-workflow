@@ -86,6 +86,7 @@ export default async function WorkspaceLayout({
                   <WorkspaceChrome
                     sidebar={<Sidebar />}
                     initialSidebarCollapsed={initialSidebarCollapsed}
+                    sidebarPlacement='top'
                   >
                     {children}
                   </WorkspaceChrome>

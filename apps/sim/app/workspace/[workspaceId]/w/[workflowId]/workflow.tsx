@@ -62,7 +62,6 @@ import {
   CommandList,
   DiffControls,
   Panel,
-  Terminal,
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
 import { BlockMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/block-menu'
 import { CanvasMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/canvas-menu'
@@ -5292,8 +5291,6 @@ const WorkflowContent = React.memo(
 
             {!embedded && <DiffControls />}
           </div>
-
-          <Terminal />
         </div>
 
         {!embedded && <Panel />}

@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
   ChipConfirmModal,
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -16,10 +17,21 @@ import {
   PopoverScrollArea,
   PopoverSection,
   PopoverTrigger,
+  Tooltip,
   Trash,
   toast,
 } from '@sim/emcn'
-import { BubbleChatDelay, Download, Lock, Plus, Unlock } from '@sim/emcn/icons'
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BubbleChatDelay,
+  Download,
+  Lock,
+  PanelRight,
+  Plus,
+  Unlock,
+} from '@sim/emcn/icons'
 import { createLogger } from '@sim/logger'
 import { toError } from '@sim/utils/errors'
 import { useQueryClient } from '@tanstack/react-query'
@@ -54,7 +66,11 @@ import {
   ItsmSave,
   Toolbar,
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components'
-import { useUsageLimits } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/hooks'
+import {
+  getDefaultFloatRect,
+  useFloatingPanel,
+  useUsageLimits,
+} from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/hooks'
 import { Variables } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/variables/variables'
 import { useAutoLayout } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-auto-layout'
 import { useCurrentWorkflow } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-current-workflow'
@@ -87,6 +103,13 @@ import { useWorkflowStore } from '@/stores/workflows/workflow/store'
 import type { WorkflowState } from '@/stores/workflows/workflow/types'
 
 const logger = createLogger('Panel')
+
+/** Names the active tab on the collapsed panel's open button, so it says what it will open. */
+const PANEL_TAB_LABELS: Record<PanelTab, string> = {
+  copilot: 'Chat',
+  toolbar: 'Toolbar',
+  editor: 'Editor',
+}
 const EMPTY_COPILOT_CHATS: readonly CopilotChatListItem[] = []
 
 /**
@@ -138,13 +161,41 @@ export const Panel = memo(function Panel() {
     setActiveTab,
     _hasHydrated,
     setHasHydrated,
+    panelWidth,
+    isCollapsed: storedCollapsed,
+    toggleCollapsed,
+    isFloating: storedFloating,
+    floatRect,
+    floatPanel,
+    setFloatRect,
+    dockPanel,
   } = usePanelStore(
     useShallow((state) => ({
       activeTab: state.activeTab,
       setActiveTab: state.setActiveTab,
       _hasHydrated: state._hasHydrated,
       setHasHydrated: state.setHasHydrated,
+      panelWidth: state.panelWidth,
+      isCollapsed: state.isCollapsed,
+      toggleCollapsed: state.toggleCollapsed,
+      isFloating: state.isFloating,
+      floatRect: state.floatRect,
+      floatPanel: state.floatPanel,
+      setFloatRect: state.setFloatRect,
+      dockPanel: state.dockPanel,
     }))
+  )
+  /** Persisted layout is applied only after hydration, so the first client render matches the server. */
+  const floating = _hasHydrated && storedFloating
+  const collapsed = _hasHydrated && storedCollapsed && !storedFloating
+  const {
+    rect: floatingRect,
+    dragHandlers,
+    resizeHandlers,
+  } = useFloatingPanel(floatRect ?? { x: 0, y: 0, width: panelWidth, height: 0 }, setFloatRect)
+  const handleDetach = useCallback(
+    () => floatPanel(floatRect ?? getDefaultFloatRect(panelWidth)),
+    [floatPanel, floatRect, panelWidth]
   )
   const toolbarRef = useRef<{
     focusSearch: () => void
@@ -699,12 +750,42 @@ export const Panel = memo(function Panel() {
     <>
       <aside
         ref={panelRef}
-        className='panel-container relative shrink-0 overflow-hidden bg-[var(--bg)]'
+        className={cn(
+          'overflow-hidden bg-[var(--bg)]',
+          floating
+            ? 'fixed z-30 rounded-lg border border-[var(--border)] shadow-[var(--shadow-overlay)]'
+            : 'panel-container relative shrink-0 transition-[width] duration-200 ease-out motion-reduce:transition-none'
+        )}
+        style={
+          floating
+            ? {
+                left: floatingRect.x,
+                top: floatingRect.y,
+                width: floatingRect.width,
+                height: floatingRect.height,
+              }
+            : undefined
+        }
+        inert={collapsed || undefined}
         aria-label='Workflow panel'
       >
-        <div className='flex h-full flex-col border-[var(--border)] border-l pt-3.5'>
+        {/* Docked, the content keeps the panel's full width while the aside animates open or
+            closed, so it slides and clips rather than reflowing every frame. */}
+        <div
+          className={cn(
+            'flex h-full flex-col border-[var(--border)] pt-3.5',
+            !floating && 'shrink-0 border-l'
+          )}
+          style={floating ? undefined : { width: panelWidth }}
+        >
           {/* Header */}
-          <div className='flex shrink-0 items-center justify-between px-2'>
+          <div
+            className={cn(
+              'flex shrink-0 items-center justify-between px-2',
+              floating && 'cursor-grab touch-none active:cursor-grabbing'
+            )}
+            {...(floating ? dragHandlers : undefined)}
+          >
             {/* More and Chat */}
             <div className='flex gap-1.5'>
               <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -747,6 +828,39 @@ export const Panel = memo(function Panel() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              {floating ? (
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <Button
+                      className='size-[30px] rounded-[5px]'
+                      onClick={dockPanel}
+                      aria-label='Dock panel'
+                    >
+                      <PanelRight className='size-[14px]' />
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side='bottom'>
+                    <p>Dock panel to the side</p>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              ) : (
+                <>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <Button
+                        className='size-[30px] rounded-[5px]'
+                        onClick={handleDetach}
+                        aria-label='Detach panel'
+                      >
+                        <ArrowUpRight className='size-[14px]' />
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side='bottom'>
+                      <p>Detach panel into a floating window</p>
+                    </Tooltip.Content>
+                  </Tooltip.Root>
+                </>
+              )}
             </div>
 
             <ItsmSave
@@ -929,7 +1043,35 @@ export const Panel = memo(function Panel() {
             </div>
           </div>
         </div>
+        {floating && (
+          <div
+            aria-hidden
+            className='absolute right-0 bottom-0 z-10 size-4 cursor-se-resize touch-none'
+            {...resizeHandlers}
+          />
+        )}
       </aside>
+
+      {/* Rides the panel's left edge: `--panel-width` is 0 while collapsed, so the strip
+          follows the panel out to the window edge and back. */}
+      {_hasHydrated && !floating && (
+        <button
+          type='button'
+          onClick={toggleCollapsed}
+          aria-label={`${collapsed ? 'Open' : 'Close'} ${PANEL_TAB_LABELS[activeTab]}`}
+          aria-expanded={!collapsed}
+          className='fixed top-[56px] right-[var(--panel-width)] z-30 flex w-7 cursor-pointer flex-col items-center gap-2 rounded-l-lg border border-[var(--border)] border-r-0 bg-[var(--bg)] py-3 transition-[right,background-color] duration-200 ease-out hover-hover:bg-[var(--surface-active)] motion-reduce:transition-none'
+        >
+          {collapsed ? (
+            <ArrowLeft className='size-[14px] text-[var(--text-icon)]' />
+          ) : (
+            <ArrowRight className='size-[14px] text-[var(--text-icon)]' />
+          )}
+          <span className='rotate-180 text-[var(--text-body)] text-small [writing-mode:vertical-rl]'>
+            {PANEL_TAB_LABELS[activeTab]}
+          </span>
+        </button>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ChipConfirmModal

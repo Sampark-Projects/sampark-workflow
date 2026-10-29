@@ -401,7 +401,7 @@
   --desktop-title-bar-control-icon-size: 0px; /* its glyph; desktop overrides */
   --panel-width: 320px; /* PANEL_WIDTH.DEFAULT */
   --editor-connections-height: 172px; /* EDITOR_CONNECTIONS_HEIGHT.DEFAULT */
-  --terminal-height: 206px; /* TERMINAL_HEIGHT.DEFAULT */
+  --terminal-height: 0px; /* the terminal is not rendered, so it reserves no bottom space */
   /**
    * Distance between `.workspace-content-shell` and the viewport edge
    * (CONTENT_WINDOW_GAP). The shell sits flush, so this is zero; it stays
