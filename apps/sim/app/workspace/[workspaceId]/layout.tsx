@@ -14,7 +14,6 @@ import {
   prefetchWorkspaceSidebar,
 } from '@/app/workspace/[workspaceId]/prefetch'
 import { BlockVisibilityLoader } from '@/app/workspace/[workspaceId]/providers/block-visibility-loader'
-import { DesktopOAuthConnectListener } from '@/app/workspace/[workspaceId]/providers/desktop-oauth-connect-listener'
 import { FeatureFlagsProvider } from '@/app/workspace/[workspaceId]/providers/feature-flags-provider'
 import { GlobalCommandsProvider } from '@/app/workspace/[workspaceId]/providers/global-commands-provider'
 import { SettingsLoader } from '@/app/workspace/[workspaceId]/providers/settings-loader'
@@ -70,7 +69,6 @@ export default async function WorkspaceLayout({
             viewerIsHostOrganizationMember={hostContext.viewer.isHostOrganizationMember}
             initialOrgSettings={initialOrgSettings}
           >
-            <DesktopOAuthConnectListener />
             <SettingsLoader />
             <BlockVisibilityLoader />
             <GlobalCommandsProvider>

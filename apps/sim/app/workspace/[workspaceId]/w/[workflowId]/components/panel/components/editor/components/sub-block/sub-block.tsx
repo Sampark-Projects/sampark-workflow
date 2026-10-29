@@ -10,52 +10,19 @@ import {
 } from '@sim/emcn/icons'
 import { isEqual } from 'es-toolkit'
 import { useParams } from 'next/navigation'
-import type { FilterRule, SortRule } from '@/lib/table/query-builder/constants'
 import {
-  CheckboxList,
   Code,
-  ComboBox,
-  ConditionInput,
-  CredentialSelector,
-  DocumentTagEntry,
   Dropdown,
-  EvalInput,
-  FileUpload,
-  FilterBuilder,
-  GroupedCheckboxList,
   InputFormat,
-  InputMapping,
   ItsmApproverGroupsInput,
   ItsmAssigneeGroupsInput,
   ItsmConditionInput,
-  KnowledgeBaseSelector,
-  KnowledgeTagFilters,
   LongInput,
-  McpDynamicArgs,
-  McpServerSelector,
-  McpToolSelector,
-  MessagesInput,
-  ResponseFormat,
-  ScheduleInfo,
-  SelectorInput,
   type SelectorOverrides,
   ShortInput,
-  SkillInput,
-  SliderInput,
-  SortBuilder,
   Switch,
-  Table,
-  TableSelector,
   Text,
-  TimeInput,
-  ToolInput,
-  VariablesInput,
-  WorkflowInputMapper,
-  WorkflowOutputSelector,
-  WorkflowSelectorInput,
-  WorkspaceFolderSelector,
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components'
-import { MODAL_REGISTRY } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/modal-registry'
 import { useDependsOnGate } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/hooks/use-depends-on-gate'
 import type { SubBlockConfig } from '@/blocks/types'
 import { useWebhookManagement } from '@/hooks/use-webhook-management'
@@ -697,68 +664,6 @@ function SubBlockComponent({
           </div>
         )
 
-      case 'table-selector':
-        return (
-          <div role='presentation' onMouseDown={handleMouseDown}>
-            <TableSelector
-              blockId={blockId}
-              subBlock={config}
-              disabled={isDisabled}
-              isPreview={isPreview}
-              previewValue={previewValue as string | null}
-            />
-          </div>
-        )
-
-      case 'combobox':
-        return (
-          <div role='presentation' onMouseDown={handleMouseDown}>
-            <ComboBox
-              blockId={blockId}
-              subBlockId={config.id}
-              options={config.options as { label: string; id: string }[]}
-              defaultValue={typeof config.value === 'function' ? config.value({}) : config.value}
-              placeholder={config.placeholder}
-              isPreview={isPreview}
-              previewValue={previewValue as any}
-              disabled={isDisabled}
-              config={config}
-              selectorKey={config.selectorKey}
-              selectorExcludeSelf={config.selectorExcludeSelf}
-              dependsOn={config.dependsOn}
-            />
-          </div>
-        )
-
-      case 'slider':
-        return (
-          <SliderInput
-            blockId={blockId}
-            subBlockId={config.id}
-            min={config.min}
-            max={config.max}
-            defaultValue={(config.min || 0) + ((config.max || 100) - (config.min || 0)) / 2}
-            step={config.step}
-            integer={config.integer}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'table':
-        return (
-          <Table
-            blockId={blockId}
-            subBlockId={config.id}
-            columns={config.columns ?? []}
-            password={config.password}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
       case 'code':
         return (
           <Code
@@ -805,71 +710,6 @@ function SubBlockComponent({
           />
         )
 
-      case 'tool-input':
-        return (
-          <ToolInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            disabled={allowExpandInPreview ? false : isDisabled}
-            allowExpandInPreview={allowExpandInPreview}
-          />
-        )
-
-      case 'skill-input':
-        return (
-          <SkillInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'checkbox-list':
-        return (
-          <CheckboxList
-            blockId={blockId}
-            options={
-              config.options as {
-                label: string
-                id: string
-                defaultChecked?: boolean
-                description?: string
-              }[]
-            }
-            isPreview={isPreview}
-            subBlockValues={subBlockValues}
-            disabled={isDisabled}
-            subBlockId={config.id}
-          />
-        )
-
-      case 'grouped-checkbox-list':
-        return (
-          <GroupedCheckboxList
-            blockId={blockId}
-            subBlockId={config.id}
-            options={config.options as { label: string; id: string; group?: string }[]}
-            isPreview={isPreview}
-            subBlockValues={subBlockValues ?? {}}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'condition-input':
-        return (
-          <ConditionInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
       case 'itsm-approver-groups':
         return (
           <ItsmApproverGroupsInput
@@ -903,159 +743,6 @@ function SubBlockComponent({
           />
         )
 
-      case 'router-input':
-        return (
-          <ConditionInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-            mode='router'
-          />
-        )
-
-      case 'eval-input':
-        return (
-          <EvalInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'time-input':
-        return (
-          <TimeInput
-            blockId={blockId}
-            subBlockId={config.id}
-            placeholder={config.placeholder}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'file-upload':
-        return (
-          <FileUpload
-            blockId={blockId}
-            subBlockId={config.id}
-            acceptedTypes={config.acceptedTypes || '*'}
-            multiple={config.multiple === true}
-            maxSize={config.maxSize}
-            requiresCloudStorage={config.requiresCloudStorage === true}
-            folderScope={config.folderScope}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'schedule-info':
-        return <ScheduleInfo blockId={blockId} isPreview={isPreview} />
-
-      case 'oauth-input':
-        return (
-          <CredentialSelector
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'file-selector':
-      case 'sheet-selector':
-      case 'project-selector':
-      case 'column-selector':
-        return (
-          <SelectorInput
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'folder-selector':
-        if (config.resourceType) {
-          return (
-            <WorkspaceFolderSelector
-              blockId={blockId}
-              subBlock={config}
-              disabled={isDisabled}
-              required={isFieldRequired(config, subBlockValues)}
-              isPreview={isPreview}
-              previewValue={previewValue}
-            />
-          )
-        }
-        return (
-          <SelectorInput
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-            overrides={FOLDER_OVERRIDES}
-          />
-        )
-
-      case 'knowledge-base-selector':
-        return (
-          <KnowledgeBaseSelector
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-          />
-        )
-
-      case 'knowledge-tag-filters':
-        return (
-          <KnowledgeTagFilters
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'document-tag-entry':
-        return (
-          <DocumentTagEntry
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'document-selector':
-        return (
-          <SelectorInput
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-          />
-        )
-
       case 'input-format':
         return (
           <InputFormat
@@ -1069,147 +756,6 @@ function SubBlockComponent({
           />
         )
 
-      case 'input-mapping':
-        return (
-          <InputMapping
-            blockId={blockId}
-            subBlock={config}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'workflow-input-mapper':
-        return (
-          <WorkflowInputMapper
-            blockId={blockId}
-            subBlock={config}
-            isPreview={isPreview}
-            previewValue={previewValue as string | null | undefined}
-            disabled={isDisabled}
-            contextValues={contextValues}
-          />
-        )
-
-      case 'variables-input':
-        return (
-          <VariablesInput
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'response-format':
-        return (
-          <ResponseFormat
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            config={config}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'filter-builder':
-        return (
-          <FilterBuilder
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as FilterRule[] | null | undefined}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'sort-builder':
-        return (
-          <SortBuilder
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as SortRule[] | null | undefined}
-            disabled={isDisabled}
-          />
-        )
-
-      case 'channel-selector':
-      case 'user-selector':
-        return (
-          <SelectorInput
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-            overrides={SLACK_OVERRIDES}
-          />
-        )
-
-      case 'workflow-selector':
-        return (
-          <WorkflowSelectorInput
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as string | null}
-          />
-        )
-
-      case 'workflow-output-selector':
-        return (
-          <WorkflowOutputSelector
-            blockId={blockId}
-            subBlockId={config.id}
-            isPreview={isPreview}
-            previewValue={previewValue as string[] | null | undefined}
-            disabled={isDisabled}
-            placeholder={config.placeholder}
-          />
-        )
-
-      case 'mcp-server-selector':
-        return (
-          <McpServerSelector
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-          />
-        )
-
-      case 'mcp-tool-selector':
-        return (
-          <McpToolSelector
-            blockId={blockId}
-            subBlock={config}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            previewContextValues={contextValues}
-          />
-        )
-
-      case 'mcp-dynamic-args':
-        return (
-          <McpDynamicArgs
-            blockId={blockId}
-            subBlockId={config.id}
-            disabled={isDisabled}
-            isPreview={isPreview}
-            previewValue={previewValue}
-            previewContextValues={contextValues}
-          />
-        )
-
       case 'text':
         return (
           <Text
@@ -1220,29 +766,6 @@ function SubBlockComponent({
                 ? config.value(subBlockValues || {})
                 : (config.defaultValue as string) || ''
             }
-          />
-        )
-      case 'modal': {
-        const ModalComponent = config.modalId ? MODAL_REGISTRY[config.modalId] : undefined
-        if (!ModalComponent) {
-          return (
-            <div className='text-[var(--text-error)] text-sm'>
-              Unknown modal: {String(config.modalId)}
-            </div>
-          )
-        }
-        return <ModalComponent blockId={blockId} isPreview={isPreview} disabled={isDisabled} />
-      }
-      case 'messages-input':
-        return (
-          <MessagesInput
-            blockId={blockId}
-            subBlockId={config.id}
-            config={config}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
-            wandControlRef={wandControlRef}
           />
         )
 

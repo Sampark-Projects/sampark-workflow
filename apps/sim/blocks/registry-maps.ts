@@ -6,7 +6,6 @@ import { ItsmEscalationBlock } from '@/blocks/blocks/itsm_escalation'
 import { ItsmProcessBlock } from '@/blocks/blocks/itsm_process'
 import { ItsmStartBlock } from '@/blocks/blocks/itsm_start'
 import { NoteBlock } from '@/blocks/blocks/note'
-import { SentryBlock, SentryBlockMeta } from '@/blocks/blocks/sentry'
 import { StartTriggerBlock } from '@/blocks/blocks/start_trigger'
 import { StarterBlock } from '@/blocks/blocks/starter'
 import type { BlockConfig, BlockMeta } from '@/blocks/types'
@@ -21,7 +20,6 @@ export const BLOCK_REGISTRY: Record<string, BlockConfig> = {
   itsm_process: ItsmProcessBlock,
   itsm_start: ItsmStartBlock,
   note: NoteBlock,
-  sentry: SentryBlock,
   start_trigger: StartTriggerBlock,
   starter: StarterBlock,
 }
@@ -39,6 +37,4 @@ export const BLOCK_REGISTRY: Record<string, BlockConfig> = {
  * pages) and `getAllBlockMeta()` → `POPULAR_WORKFLOWS` (landing integrations
  * index). The toolbar and search modal read block *configs*, not metas.
  */
-export const BLOCK_META_REGISTRY: Record<string, BlockMeta> = {
-  sentry: SentryBlockMeta,
-}
+export const BLOCK_META_REGISTRY: Record<string, BlockMeta> = {}

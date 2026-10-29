@@ -141,7 +141,6 @@ import {
 import { useUpdateWorkflow, useWorkflowMap } from '@/hooks/queries/workflows'
 import { useCanvasViewport } from '@/hooks/use-canvas-viewport'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
-import { useOAuthReturnForWorkflow } from '@/hooks/use-oauth-return'
 import { useOperationAccess } from '@/hooks/use-operation-access'
 import { useCanvasModeStore } from '@/stores/canvas-mode'
 import { defaultWorkflowExecutionState, useExecutionStore } from '@/stores/execution'
@@ -355,8 +354,6 @@ const WorkflowContent = React.memo(
         leaveWorkflow()
       }
     }, [embedded, workflowIdParam, joinWorkflow, leaveWorkflow])
-
-    useOAuthReturnForWorkflow(workflowIdParam)
 
     const {
       data: workflows = {},
