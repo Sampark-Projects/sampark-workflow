@@ -12,8 +12,10 @@ vi.mock('next/link', () => ({
   ),
 }))
 vi.mock('@/app/_shell/desktop-title-bar', () => ({ DesktopTitleBarLane: () => null }))
-vi.mock('@/app/(landing)/components/navbar/components', () => ({
+vi.mock('@/app/(landing)/components/navbar/components/logo-mark', () => ({
   LogoMark: ({ children }: { children: ReactNode }) => <>{children}</>,
+}))
+vi.mock('@/app/(landing)/components/navbar/components/sim-wordmark', () => ({
   SimWordmark: () => 'Sim',
 }))
 
