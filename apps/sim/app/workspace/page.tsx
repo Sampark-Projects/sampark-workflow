@@ -5,6 +5,7 @@ import { Chip } from '@sim/emcn'
 import { CircleAlert } from '@sim/emcn/icons'
 import { createLogger } from '@sim/logger'
 import { useRouter } from 'next/navigation'
+import { EmbedFailureGate } from '@/components/itsm-embed-failure-gate'
 import { isApiClientError } from '@/lib/api/client/errors'
 import { requestJson } from '@/lib/api/client/request'
 import { getWorkflowStateContract } from '@/lib/api/contracts/workflows'
@@ -17,6 +18,7 @@ import {
   UPGRADE_REASON_PARAM,
 } from '@/lib/billing/upgrade-reasons'
 import { WorkspaceRecencyStorage } from '@/lib/core/utils/browser-storage'
+import { reportEmbedFailure } from '@/lib/itsm/embed-failure'
 import { DesktopTitleBarLane } from '@/app/_shell/desktop-title-bar'
 import { useWorkspacesWithMetadata } from '@/hooks/queries/workspace'
 
@@ -50,24 +52,26 @@ function WorkspaceStatusCard({
   onPrimary,
 }: WorkspaceStatusCardProps) {
   return (
-    <main className='desktop-title-bar-page flex w-full items-center justify-center bg-[var(--surface-1)] p-6'>
-      <DesktopTitleBarLane />
-      <div className='flex max-w-md flex-col items-center gap-3 text-center'>
-        <div className='flex size-10 items-center justify-center rounded-full bg-[var(--surface-3)]'>
-          <CircleAlert className='size-[18px] text-[var(--text-icon)]' aria-hidden />
+    <EmbedFailureGate reason='workspaces-unavailable'>
+      <main className='desktop-title-bar-page flex w-full items-center justify-center bg-[var(--surface-1)] p-6'>
+        <DesktopTitleBarLane />
+        <div className='flex max-w-md flex-col items-center gap-3 text-center'>
+          <div className='flex size-10 items-center justify-center rounded-full bg-[var(--surface-3)]'>
+            <CircleAlert className='size-[18px] text-[var(--text-icon)]' aria-hidden />
+          </div>
+          <div className='space-y-1'>
+            <h1 className='text-[var(--text-primary)] text-lg'>{title}</h1>
+            <p className='text-[var(--text-muted)] text-sm'>{description}</p>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Chip variant='primary' onClick={onPrimary}>
+              {primaryLabel}
+            </Chip>
+            <Chip onClick={() => void recoverFromStaleSession()}>Sign out</Chip>
+          </div>
         </div>
-        <div className='space-y-1'>
-          <h1 className='text-[var(--text-primary)] text-lg'>{title}</h1>
-          <p className='text-[var(--text-muted)] text-sm'>{description}</p>
-        </div>
-        <div className='flex items-center gap-2'>
-          <Chip variant='primary' onClick={onPrimary}>
-            {primaryLabel}
-          </Chip>
-          <Chip onClick={() => void recoverFromStaleSession()}>Sign out</Chip>
-        </div>
-      </div>
-    </main>
+      </main>
+    </EmbedFailureGate>
   )
 }
 
@@ -89,6 +93,7 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (!isAuthenticated || !isStaleSessionError(workspacesError) || isRecoveringRef.current) return
     isRecoveringRef.current = true
+    if (reportEmbedFailure('session-expired')) return
     logger.warn('Session cookies are stale (authenticated session but 401 API); signing out')
     void recoverFromStaleSession().then((recovered) => {
       if (recovered) return
@@ -111,6 +116,7 @@ export default function WorkspacePage() {
       // the same way as the 401 path: sign out (clears the cookies without
       // needing a live session), then navigate.
       hasRedirectedRef.current = true
+      if (reportEmbedFailure('session-missing')) return
       logger.info('User not authenticated, signing out stale cookies and redirecting to login')
       void recoverFromStaleSession().then((recovered) => {
         if (!recovered) setRecoveryFailed(true)

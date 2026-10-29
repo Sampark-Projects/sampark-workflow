@@ -4,6 +4,7 @@ import { type ReactNode, useEffect } from 'react'
 import { Chip } from '@sim/emcn'
 import { TriangleAlert } from '@sim/emcn/icons'
 import { createLogger } from '@sim/logger'
+import { EmbedFailureGate } from '@/components/itsm-embed-failure-gate'
 
 /** Props shape required by Next.js error boundary files (`error.tsx`). */
 export interface ErrorBoundaryProps {
@@ -78,11 +79,13 @@ export function ErrorState({
   }, [error.message, error.digest, loggerName])
 
   return (
-    <ErrorShell title={title} description={description} icon={icon}>
-      {children}
-      <Chip variant='primary' onClick={reset}>
-        Try again
-      </Chip>
-    </ErrorShell>
+    <EmbedFailureGate reason={loggerName}>
+      <ErrorShell title={title} description={description} icon={icon}>
+        {children}
+        <Chip variant='primary' onClick={reset}>
+          Try again
+        </Chip>
+      </ErrorShell>
+    </EmbedFailureGate>
   )
 }

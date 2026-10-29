@@ -58,10 +58,8 @@ export const GET = withRouteHandler(async (request: NextRequest) => {
 
   if (!verifyResponse.ok) {
     logger.warn('ITSM handoff token redemption failed', { status: verifyResponse.status })
-    return NextResponse.json(
-      { error: 'This login link is invalid or has expired' },
-      { status: 400 }
-    )
+    // Inside the ITSM iframe, /login renders nothing and reports the failure to the parent page.
+    return new NextResponse(null, { status: 303, headers: { location: '/login' } })
   }
 
   // A relative `Location` (valid per RFC 9110) is resolved by the browser against the origin it

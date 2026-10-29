@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import { EmbedFailureGate } from '@/components/itsm-embed-failure-gate'
 import { isRegistrationDisabled } from '@/lib/core/config/env-flags'
 import { getOAuthProviderStatus } from '@/app/(auth)/components/oauth-provider-checker'
 import LoginLoading from '@/app/(auth)/login/loading'
@@ -15,13 +16,15 @@ export default async function LoginPage() {
   const { githubAvailable, googleAvailable, microsoftAvailable } = await getOAuthProviderStatus()
 
   return (
-    <Suspense fallback={<LoginLoading />}>
-      <LoginForm
-        githubAvailable={githubAvailable}
-        googleAvailable={googleAvailable}
-        microsoftAvailable={microsoftAvailable}
-        registrationDisabled={isRegistrationDisabled}
-      />
-    </Suspense>
+    <EmbedFailureGate reason='login-required'>
+      <Suspense fallback={<LoginLoading />}>
+        <LoginForm
+          githubAvailable={githubAvailable}
+          googleAvailable={googleAvailable}
+          microsoftAvailable={microsoftAvailable}
+          registrationDisabled={isRegistrationDisabled}
+        />
+      </Suspense>
+    </EmbedFailureGate>
   )
 }
