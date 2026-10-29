@@ -33,13 +33,10 @@ import {
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/toolbar/components'
 import { useToolbarItemInteractions } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/toolbar/hooks'
 import { BlockTile } from '@/blocks/block-tile'
-import { buildCustomBlockConfig, isCustomBlockType } from '@/blocks/custom/build-config'
+import { isCustomBlockType } from '@/blocks/custom/build-config'
 import { useCustomBlockOverlayVersion } from '@/blocks/custom/client-overlay'
-import { getCustomBlockTile } from '@/blocks/custom/custom-block-icon'
 import { getCanonicalBlocksByCategory } from '@/blocks/registry'
 import type { BlockConfig } from '@/blocks/types'
-import { useOrgBrandConfig } from '@/ee/whitelabeling/components/branding-provider'
-import { useCustomBlocks } from '@/hooks/queries/custom-blocks'
 import { usePermissionConfig } from '@/hooks/use-permission-config'
 import { useSandboxBlockConstraints } from '@/hooks/use-sandbox-block-constraints'
 import { useToolbarStore } from '@/stores/panel'
@@ -53,6 +50,8 @@ interface BlockItem {
   bgColor?: string
   docsLink?: string
 }
+
+const NO_CUSTOM_BLOCKS: BlockItem[] = []
 
 interface ToolbarItemProps {
   item: BlockItem
@@ -449,9 +448,6 @@ export const Toolbar = memo(
     const params = useParams()
     const workspaceId = params?.workspaceId as string | undefined
     const currentWorkflowId = params?.workflowId as string | undefined
-    const { data: customBlocksData } = useCustomBlocks(workspaceId)
-    /** No-icon custom blocks use the access-authorized workspace host logo, then the glyph. */
-    const fallbackIconUrl = useOrgBrandConfig().logoUrl ?? null
 
     // Re-read the block lists whenever the overlay version bumps (custom-block
     // or block-visibility hydrate) — the module caches are keyed to it.
@@ -460,35 +456,8 @@ export const Toolbar = memo(
     const allBlocks = getBlocks(blockOverlayVersion)
     const allTools = getTools(blockOverlayVersion)
 
-    // Published custom blocks are their own section. Exclude disabled blocks (still
-    // resolvable so placed instances survive, but not offered for new placement) and
-    // the block bound to the CURRENT workflow — adding a workflow's own block recurses.
-    const allCustomBlocks = useMemo(() => {
-      if (!customBlocksData?.length) return []
-      return customBlocksData
-        .filter((cb) => cb.enabled && cb.workflowId !== currentWorkflowId)
-        .map((cb) => {
-          const { icon, bgColor } = getCustomBlockTile(cb.iconUrl, fallbackIconUrl)
-          return {
-            name: cb.name,
-            type: cb.type,
-            config: buildCustomBlockConfig(
-              {
-                type: cb.type,
-                name: cb.name,
-                description: cb.description,
-                workflowId: cb.workflowId,
-                exposedOutputs: cb.exposedOutputs,
-              },
-              cb.inputFields,
-              { icon, bgColor }
-            ),
-            icon,
-            bgColor,
-          } satisfies BlockItem
-        })
-        .sort((a, b) => a.name.localeCompare(b.name))
-    }, [customBlocksData, currentWorkflowId, fallbackIconUrl])
+    /** Org custom blocks are not offered in the designer, so the section stays empty. */
+    const allCustomBlocks = NO_CUSTOM_BLOCKS
 
     const visibleTriggers = useMemo(() => {
       if (sandboxAllowedBlocks !== null) return []

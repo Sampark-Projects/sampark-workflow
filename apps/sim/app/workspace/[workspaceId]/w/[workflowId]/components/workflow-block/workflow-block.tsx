@@ -35,7 +35,6 @@ import { usePostHog } from 'posthog-js/react'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
 import { useDeploymentShape } from '@/lib/core/config/deployment-shape'
 import { getBaseUrl } from '@/lib/core/utils/urls'
-import { createMcpToolId } from '@/lib/mcp/shared'
 import { sendMothershipMessage } from '@/lib/mothership/events'
 import { getProviderIdFromServiceId } from '@/lib/oauth'
 import { captureEvent } from '@/lib/posthog/client'
@@ -69,8 +68,6 @@ import {
   resolveFolderPathLabel,
   resolveItsmGroupsLabel,
   resolveSandboxLabel,
-  resolveSkillsLabel,
-  resolveToolsLabel,
   resolveVariablesLabel,
   resolveWorkflowMultiSelectLabel,
   resolveWorkflowSelectionLabel,
@@ -103,7 +100,6 @@ import {
   isEdgeHighlighted,
 } from '@/app/workspace/[workspaceId]/w/[workflowId]/utils/edge-highlight'
 import { hasBlockAccent } from '@/blocks/accent'
-import { useCustomBlockOverlayVersion } from '@/blocks/custom/client-overlay'
 import { getBlock } from '@/blocks/registry'
 import {
   type BlockConfig,
@@ -111,15 +107,11 @@ import {
   type SubBlockConfig,
 } from '@/blocks/types'
 import { useKnowledgeBase } from '@/hooks/kb/use-knowledge'
-import { useCustomTools } from '@/hooks/queries/custom-tools'
 import { useDeployWorkflow } from '@/hooks/queries/deployments'
 import { useDynamicSubBlockOptionDisplayName } from '@/hooks/queries/dynamic-subblock-options'
-import { useMcpToolServers, useMcpToolsQuery } from '@/hooks/queries/mcp'
 import { useCredentialName } from '@/hooks/queries/oauth/oauth-credentials'
 import { useSandboxes } from '@/hooks/queries/sandboxes'
 import { useReactivateSchedule, useScheduleInfo } from '@/hooks/queries/schedules'
-import { useSkills } from '@/hooks/queries/skills'
-import { useTablesList } from '@/hooks/queries/tables'
 import { useWorkflowMap } from '@/hooks/queries/workflows'
 import { useReactiveConditions } from '@/hooks/use-reactive-conditions'
 import { useSelectorDisplayName } from '@/hooks/use-selector-display-name'
@@ -476,45 +468,6 @@ const SubBlockRow = memo(function SubBlockRow({
     )
   }, [workflowMapForLookup, workflowMapLoaded, workflowMapIsPlaceholder, subBlock, rawValue])
 
-  const { data: mcpServers = [] } = useMcpToolServers(workspaceId || '')
-  const mcpServerDisplayName = useMemo(() => {
-    if (subBlock?.type !== 'mcp-server-selector' || typeof rawValue !== 'string') {
-      return null
-    }
-    const server = mcpServers.find((s) => s.id === rawValue)
-    return server?.name ?? null
-  }, [subBlock?.type, rawValue, mcpServers])
-
-  const { data: mcpToolsData = [] } = useMcpToolsQuery(workspaceId || '')
-  const mcpToolNamesById = useMemo(() => {
-    if (subBlock?.type !== 'mcp-tool-selector' && subBlock?.type !== 'tool-input') {
-      return EMPTY_MCP_TOOL_NAMES
-    }
-    const names = new Map<string, string>()
-    for (const t of mcpToolsData) {
-      const toolId = createMcpToolId(t.serverId, t.name)
-      if (!names.has(toolId)) names.set(toolId, t.name)
-    }
-    return names
-  }, [subBlock?.type, mcpToolsData])
-  const mcpToolDisplayName = useMemo(() => {
-    if (subBlock?.type !== 'mcp-tool-selector' || typeof rawValue !== 'string') {
-      return null
-    }
-    return subBlock.canonicalParamId === 'tool'
-      ? rawValue
-      : (mcpToolNamesById.get(rawValue) ?? null)
-  }, [subBlock?.type, subBlock?.canonicalParamId, rawValue, mcpToolNamesById])
-
-  const { data: tables = [] } = useTablesList(workspaceId || '')
-  const tableDisplayName = useMemo(() => {
-    if (subBlock?.type !== 'table-selector' || typeof rawValue !== 'string') {
-      return null
-    }
-    const table = tables.find((t) => t.id === rawValue)
-    return table?.name ?? null
-  }, [subBlock?.type, rawValue, tables])
-
   const webhookUrlDisplayValue = useMemo(() => {
     if (!subBlock?.id?.startsWith('webhookUrlDisplay') || !blockId) {
       return null
@@ -555,28 +508,9 @@ const SubBlockRow = memo(function SubBlockRow({
     [subBlock, rawValue, workflowVariables]
   )
 
-  /**
-   * Hydrates tool references to display names. The overlay version is a dep
-   * because resolveToolsLabel reads getBlock, whose custom-block results
-   * change when the client overlay hydrates (see client-overlay.ts).
-   */
-  const { data: customTools = [] } = useCustomTools(workspaceId || '')
-  const customBlockOverlayVersion = useCustomBlockOverlayVersion()
-  const toolsDisplayValue = useMemo(
-    () => resolveToolsLabel(subBlock, rawValue, customTools, mcpToolNamesById),
-    [subBlock, rawValue, customTools, mcpToolNamesById, customBlockOverlayVersion]
-  )
-
   const filterDisplayValue = useMemo(
     () => resolveFilterFieldLabel(subBlock, rawValue),
     [subBlock, rawValue]
-  )
-
-  /** Hydrates skill references to display names. */
-  const { data: workspaceSkills = [] } = useSkills(workspaceId || '')
-  const skillsDisplayValue = useMemo(
-    () => resolveSkillsLabel(subBlock, rawValue, workspaceSkills),
-    [subBlock, rawValue, workspaceSkills]
   )
 
   /**
@@ -613,14 +547,9 @@ const SubBlockRow = memo(function SubBlockRow({
     dynamicOptionDisplayName ||
     variablesDisplayValue ||
     filterDisplayValue ||
-    toolsDisplayValue ||
-    skillsDisplayValue ||
     sandboxDisplayValue ||
     knowledgeBaseDisplayName ||
     workflowSelectionName ||
-    mcpServerDisplayName ||
-    mcpToolDisplayName ||
-    tableDisplayName ||
     folderPathDisplayValue ||
     itsmGroupsDisplayValue ||
     webhookUrlDisplayValue ||
