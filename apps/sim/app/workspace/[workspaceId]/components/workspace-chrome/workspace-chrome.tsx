@@ -371,7 +371,7 @@ export function WorkspaceChrome({
         </div>
       </div>
       <div
-        className='workspace-content-shell flex min-w-0 flex-1 flex-col'
+        className='workspace-content-shell flex min-h-0 min-w-0 flex-1 flex-col'
         data-sidebar-collapsed={isCollapsed || undefined}
       >
         <div
