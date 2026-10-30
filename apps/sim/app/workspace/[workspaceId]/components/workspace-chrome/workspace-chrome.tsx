@@ -12,11 +12,8 @@ import {
 } from '@/app/workspace/[workspaceId]/components/workspace-chrome/sidebar-chrome-context'
 import { useSidebarPeek } from '@/app/workspace/[workspaceId]/components/workspace-chrome/use-sidebar-peek'
 import { SidebarTooltip } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/sidebar-tooltip'
-import { useFullscreenOriginStore } from '@/stores/fullscreen-origin'
 import { useSearchModalStore } from '@/stores/modals/search/store'
 import { useSidebarStore } from '@/stores/sidebar/store'
-
-const FULLSCREEN_SUFFIXES = ['/upgrade'] as const
 
 /**
  * The peek card's floating chrome.
@@ -157,26 +154,15 @@ function TitleBarHistoryNav() {
   )
 }
 
-function isFullscreenPath(pathname: string | null): boolean {
-  return FULLSCREEN_SUFFIXES.some((s) => pathname?.endsWith(s))
-}
-
 /**
  * Renders the app chrome as a single persistent tree — the workspace layout and the
  * organization layout both mount it, each with its own sidebar. The sidebar is
- * always mounted; on a fullscreen route (`/upgrade`) its wrapper collapses to
- * zero width, revealing the route content. Because this component lives in the
- * layout it persists across navigations, so the rail never re-mounts.
+ * always mounted. Because this component lives in the layout it persists across
+ * navigations, so the rail never re-mounts.
  *
  * The docked rail and content pane share one width transition. Drag-resizing,
  * hydration, and reduced motion bypass it; the floating peek retains its own
  * enter/exit animation.
- *
- * Because the chrome observes every pathname transition, it records the page a
- * fullscreen route was launched from into {@link useFullscreenOriginStore}. The
- * route's Back control reads that origin to return deterministically, so any
- * trigger that merely pushes a fullscreen route gets correct return-to-origin
- * without per-call-site wiring.
  *
  * On the macOS desktop shell, where collapsing hides the rail entirely, the same
  * wrapper doubles as the hover-peek card: hovering the title-bar sidebar toggle
@@ -191,10 +177,7 @@ export function WorkspaceChrome({
   sidebarPlacement = 'left',
 }: WorkspaceChromeProps) {
   const pathname = usePathname()
-  const isFullscreen = isFullscreenPath(pathname)
   const isTop = sidebarPlacement === 'top'
-
-  const setOrigin = useFullscreenOriginStore((s) => s.setOrigin)
 
   /**
    * Which title-bar treatment the host is using. `inset` is the macOS desktop shell,
@@ -230,7 +213,7 @@ export function WorkspaceChrome({
    * desktop shell. The web app keeps a 51px icon rail (with its own hover flyouts),
    * and native fullscreen falls back to that same rail.
    */
-  const peekEnabled = !isTop && isCollapsed && !isFullscreen && titleBarMode === 'inset'
+  const peekEnabled = !isTop && isCollapsed && titleBarMode === 'inset'
   const { isPeekActive, isPeekOpen, cardRef, triggerRef, onTriggerEnter, onTriggerLeave } =
     useSidebarPeek(peekEnabled, isSearchModalOpen)
 
@@ -254,12 +237,6 @@ export function WorkspaceChrome({
       useSidebarStore.getState().syncWidth()
     }
   }, [isTop])
-
-  // Remember the last non-fullscreen page so a fullscreen route's Back control
-  // can return there, deterministically and for any trigger.
-  useEffect(() => {
-    if (pathname && !isFullscreen) setOrigin(pathname)
-  }, [pathname, isFullscreen, setOrigin])
 
   // Re-apply the sidebar width whenever this persistent shell sees a navigation.
   // The blocking script in the document head only runs on full page loads and
@@ -369,17 +346,13 @@ export function WorkspaceChrome({
               ? PEEK_CARD_ENTER
               : PEEK_CARD_EXIT
             : isTop
-              ? isFullscreen
-                ? 'hidden'
-                : 'w-full'
-              : isFullscreen
-                ? 'w-0'
-                : 'w-[var(--sidebar-width)]'
+              ? 'w-full'
+              : 'w-[var(--sidebar-width)]'
         )}
         data-collapsed={isCollapsed || undefined}
         data-peek={isPeekActive || undefined}
         /* Also hidden mid-exit, where the card is mounted but invisible. */
-        aria-hidden={isFullscreen || (isPeekActive && !isPeekOpen) || undefined}
+        aria-hidden={(isPeekActive && !isPeekOpen) || undefined}
         suppressHydrationWarning
       >
         <div
@@ -398,23 +371,20 @@ export function WorkspaceChrome({
         </div>
       </div>
       <div
-        className='workspace-content-shell flex min-w-0 flex-1 flex-col'
+        className='workspace-content-shell flex min-h-0 min-w-0 flex-1 flex-col'
         data-sidebar-collapsed={isCollapsed || undefined}
-        /* A fullscreen route slides the sidebar away without collapsing it, so the pane
-           inherits the traffic-light lane the same way a collapsed sidebar does. */
-        data-content-fullscreen={isFullscreen || undefined}
       >
         <div
           className={cn(
             'flex-1 overflow-hidden bg-[var(--bg)]',
             CONTENT_PANE_DIVIDER,
-            (isFullscreen || isTop) && 'border-l-0'
+            isTop && 'border-l-0'
           )}
         >
           {children}
         </div>
       </div>
-      {!isFullscreen && !isTop && (
+      {!isTop && (
         /**
          * The hover region lives on this wrapper, not the button: `SidebarTooltip`
          * returns bare `children` when disabled, so suppressing the tooltip while
@@ -450,7 +420,7 @@ export function WorkspaceChrome({
           </SidebarTooltip>
         </div>
       )}
-      {!isFullscreen && !isTop && <TitleBarHistoryNav />}
+      {!isTop && <TitleBarHistoryNav />}
     </div>
   )
 }

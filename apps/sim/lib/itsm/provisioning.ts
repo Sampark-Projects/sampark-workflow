@@ -11,7 +11,12 @@ import {
   OrganizationSlugTakenError,
 } from '@/lib/billing/organizations/create-organization'
 import type { DbOrTx } from '@/lib/db/types'
+import { seedItsmDefaultWorkspacesInTransaction } from '@/lib/itsm/default-workspaces'
 import { encryptItsmWebhookSecret } from '@/lib/itsm/encryption'
+import {
+  enqueueItsmWorkflowCreatedSync,
+  enqueueItsmWorkspaceCreatedSync,
+} from '@/lib/itsm/sync/outbox'
 import { deleteUserAccount } from '@/lib/users/account-deletion'
 
 const logger = createLogger('ItsmProvisioning')
@@ -77,7 +82,8 @@ async function acquireItsmProvisioningLock(tx: DbOrTx, customerId: string): Prom
 
 /**
  * Provisions (or idempotently returns) the Sim organization + headless owner
- * user for one ITSM tenant.
+ * user for one ITSM tenant. A new organization starts with an ITSM workspace
+ * (Incident, Change Request and Service Request workflows) and an ITAM workspace.
  *
  * The headless user is created via Better Auth's admin `createUser` API with
  * no `account`/password row — the same pattern SCIM provisioning uses — so it
@@ -124,7 +130,12 @@ export async function provisionItsmOrganization(
         .where(eq(itsmOrganizationLink.customerId, customerId))
         .limit(1)
       if (existing) {
-        return { ...existing, created: false, alreadyExisted: true as const }
+        return {
+          ...existing,
+          created: false,
+          alreadyExisted: true as const,
+          seededWorkspaces: [],
+        }
       }
 
       const slug = `itsm-${customerId}`.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
@@ -148,12 +159,18 @@ export async function provisionItsmOrganization(
         webhookSigningSecretEncrypted,
       })
 
+      const seededWorkspaces = await seedItsmDefaultWorkspacesInTransaction(tx, {
+        organizationId,
+        ownerUserId: userId,
+      })
+
       return {
         organizationId,
         simUserId: userId,
         customerId,
         created: true,
         alreadyExisted: false as const,
+        seededWorkspaces,
       }
     })
 
@@ -188,6 +205,20 @@ export async function provisionItsmOrganization(
       description: `Provisioned Sim organization for ITSM customer ${customerId}`,
       metadata: { customerId, simUserId: userId },
     })
+
+    for (const { workspaceId, workflowIds } of result.seededWorkspaces) {
+      await enqueueItsmWorkspaceCreatedSync({
+        organizationId: result.organizationId,
+        workspaceId,
+      })
+      for (const workflowId of workflowIds) {
+        await enqueueItsmWorkflowCreatedSync({
+          organizationId: result.organizationId,
+          workspaceId,
+          workflowId,
+        })
+      }
+    }
 
     return {
       organizationId: result.organizationId,

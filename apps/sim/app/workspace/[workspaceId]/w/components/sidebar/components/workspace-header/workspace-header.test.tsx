@@ -5,8 +5,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockNavigateToSettings, mockWorkspacePermissions } = vi.hoisted(() => ({
-  mockNavigateToSettings: vi.fn(),
+const { mockWorkspacePermissions } = vi.hoisted(() => ({
   mockWorkspacePermissions: { canAdmin: true, canEdit: true, canRead: true },
 }))
 
@@ -16,9 +15,6 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn(), setQueryData: vi.fn() }),
 }))
 vi.mock('@/lib/auth/auth-client', () => ({ useActiveOrganization: () => ({ data: null }) }))
-vi.mock('@/hooks/use-settings-navigation', () => ({
-  useSettingsNavigation: () => ({ navigateToSettings: mockNavigateToSettings }),
-}))
 vi.mock('@/hooks/use-permission-config', () => ({
   usePermissionConfig: () => ({ isInvitationsDisabled: false }),
 }))

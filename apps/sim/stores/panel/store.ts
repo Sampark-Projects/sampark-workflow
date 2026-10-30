@@ -1,14 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { isChatEnabled } from '@/lib/core/config/env-flags'
 import { PANEL_WIDTH } from '@/stores/constants'
 import type { PanelState, PanelTab } from '@/stores/panel/types'
 
-/**
- * Default panel tab. Falls back to the toolbar when Chat is disabled, since the
- * copilot tab is not rendered then and would leave the panel body empty.
- */
-const DEFAULT_TAB: PanelTab = isChatEnabled ? 'copilot' : 'toolbar'
+const DEFAULT_TAB: PanelTab = 'toolbar'
+
+/** A tab persisted before the Chat tab was removed resolves to the default instead of an empty body. */
+function resolveTab(tab: unknown): PanelTab {
+  return tab === 'editor' || tab === 'toolbar' ? tab : DEFAULT_TAB
+}
 
 /**
  * Publishes the width the panel occupies in the layout as `--panel-width`. A collapsed or
@@ -83,6 +83,7 @@ export const usePanelStore = create<PanelState>()(
         ...current,
         ...(persisted as Partial<typeof current>),
         panelWidth: current.panelWidth,
+        activeTab: resolveTab((persisted as Partial<typeof current> | undefined)?.activeTab),
       }),
       onRehydrateStorage: () => (state) => {
         // Sync CSS variables with stored state after rehydration

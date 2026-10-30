@@ -27,6 +27,7 @@ import {
   X,
 } from '@sim/emcn/icons'
 import { selectionActionLabel } from '@/app/workspace/[workspaceId]/components/resource/selection-label'
+import { ViewportAnchor } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/workflow-list/components/viewport-anchor'
 
 interface ContextMenuProps {
   isOpen: boolean
@@ -200,16 +201,7 @@ export function ContextMenu({
   return (
     <DropdownMenu open={isOpen} onOpenChange={(open) => !open && onClose()} modal={false}>
       <DropdownMenuTrigger asChild>
-        <div
-          style={{
-            position: 'fixed',
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-            width: '1px',
-            height: '1px',
-            pointerEvents: 'none',
-          }}
-        />
+        <ViewportAnchor position={position} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         ref={menuRef}

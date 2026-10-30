@@ -24,14 +24,14 @@ vi.mock('@/hooks/queries/workspace', () => ({ useWorkspacesWithMetadata: mocks.w
 
 import WorkspacePage from '@/app/workspace/page'
 
-describe('workspace settings destination', () => {
+describe('workspace landing destination', () => {
   let container: HTMLDivElement
   let root: Root
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
-    window.history.replaceState(null, '', '/workspace?redirect=settings')
+    window.history.replaceState(null, '', '/workspace')
     mocks.recentWorkspace.mockReturnValue('workspace-2')
     mocks.workspaces.mockReturnValue({
       data: {
@@ -51,26 +51,26 @@ describe('workspace settings destination', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens full settings in the most recent accessible workspace', async () => {
+  it('opens the most recent accessible workspace', async () => {
     await act(async () => root.render(<WorkspacePage />))
-    expect(mocks.replace).toHaveBeenCalledWith('/workspace/workspace-2/settings/general')
+    expect(mocks.replace).toHaveBeenCalledWith('/workspace/workspace-2')
     expect(mocks.request).not.toHaveBeenCalled()
   })
 
   it('uses an accessible workspace when the locally remembered workspace is unavailable', async () => {
     mocks.recentWorkspace.mockReturnValue('removed-workspace')
     await act(async () => root.render(<WorkspacePage />))
-    expect(mocks.replace).toHaveBeenCalledWith('/workspace/workspace-1/settings/general')
+    expect(mocks.replace).toHaveBeenCalledWith('/workspace/workspace-1')
   })
 
-  it('preserves the settings destination after creating a permitted first workspace', async () => {
+  it('opens the workspace created for a permitted first sign-in', async () => {
     mocks.workspaces.mockReturnValue({
       data: { workspaces: [], creationPolicy: { canCreate: true } },
       isLoading: false,
     })
     mocks.request.mockResolvedValue({ workspace: { id: 'new-workspace' } })
     await act(async () => root.render(<WorkspacePage />))
-    expect(mocks.replace).toHaveBeenCalledWith('/workspace/new-workspace/settings/general')
+    expect(mocks.replace).toHaveBeenCalledWith('/workspace/new-workspace')
   })
 
   it('keeps the access-denied state when workspace creation is blocked', async () => {
@@ -85,11 +85,5 @@ describe('workspace settings destination', () => {
     expect(container.textContent).toContain('No workspace access yet')
     expect(mocks.replace).not.toHaveBeenCalled()
     expect(mocks.request).not.toHaveBeenCalled()
-  })
-
-  it('preserves normal workspace navigation without a settings destination', async () => {
-    window.history.replaceState(null, '', '/workspace')
-    await act(async () => root.render(<WorkspacePage />))
-    expect(mocks.replace).toHaveBeenCalledWith('/workspace/workspace-2')
   })
 })

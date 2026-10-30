@@ -9,8 +9,10 @@
  * that resolves to the viewer's organization surface, or to their workspaces when
  * they belong to no organization. Every default post-auth destination must point
  * here rather than at a concrete surface, so the landing decision lives in one place.
+ * Sim only runs as the ITSM rule designer, so this is the workspace picker, which resolves to
+ * the viewer's most recent workspace and its editor.
  */
-export const APP_ENTRY_PATH = '/home'
+export const APP_ENTRY_PATH = '/workspace'
 
 /**
  * The workspace picker: resolves to the viewer's most recent workspace. Use it only

@@ -25,8 +25,8 @@ describe('getBlock prototype safety', () => {
   )
 
   it('still resolves a real block', () => {
-    const block = getBlock('agent')
-    expect(block?.type).toBe('agent')
+    const block = getBlock('itsm_process')
+    expect(block?.type).toBe('itsm_process')
   })
 })
 
