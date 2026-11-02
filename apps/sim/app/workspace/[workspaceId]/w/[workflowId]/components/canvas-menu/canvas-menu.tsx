@@ -14,16 +14,12 @@ export interface CanvasMenuProps {
   onUndo: () => void
   onRedo: () => void
   onPaste: () => void
-  onAddBlock: () => void
   onAutoLayout: () => void
   onFitToView: () => void
-  onOpenLogs: () => void
   onOpenSearchReplace: () => void
   onToggleVariables: () => void
-  onToggleChat: () => void
   onToggleWorkflowLock?: () => void
   isVariablesOpen?: boolean
-  isChatOpen?: boolean
   hasClipboard?: boolean
   disableEdit?: boolean
   canAdmin?: boolean
@@ -50,16 +46,12 @@ export function CanvasMenu({
   onUndo,
   onRedo,
   onPaste,
-  onAddBlock,
   onAutoLayout,
   onFitToView,
-  onOpenLogs,
   onOpenSearchReplace,
   onToggleVariables,
-  onToggleChat,
   onToggleWorkflowLock,
   isVariablesOpen = false,
-  isChatOpen = false,
   hasClipboard = false,
   disableEdit = false,
   canAdmin = false,
@@ -116,19 +108,8 @@ export function CanvasMenu({
           <span className='ml-auto opacity-70 group-hover:opacity-100'>⌘V</span>
         </PopoverItem>
 
-        {/* Edit and creation actions */}
+        {/* Edit actions */}
         <PopoverDivider />
-        <PopoverItem
-          className='group'
-          disabled={disableEdit}
-          onClick={() => {
-            onAddBlock()
-            onClose()
-          }}
-        >
-          <span>Add Block</span>
-          <span className='ml-auto opacity-70 group-hover:opacity-100'>⌘K</span>
-        </PopoverItem>
         <PopoverItem
           className='group'
           disabled={disableEdit || hasLockedBlocks}
@@ -159,19 +140,6 @@ export function CanvasMenu({
           }}
         >
           Fit to View
-        </PopoverItem>
-
-        {/* Navigation actions */}
-        <PopoverDivider />
-        <PopoverItem
-          className='group'
-          onClick={() => {
-            onOpenLogs()
-            onClose()
-          }}
-        >
-          <span>Open Logs</span>
-          <span className='ml-auto opacity-70 group-hover:opacity-100'>⌘L</span>
         </PopoverItem>
       </PopoverContent>
     </Popover>

@@ -124,52 +124,6 @@ const ENTRY_SOURCES: readonly EntrySource[] = [
     matches: isWorkspaceEntry,
     reason: 'client-reachable workspace convention entries',
   },
-  {
-    root: 'app/api/v2/blocks',
-    matches: isRouteEntry,
-    reason: 'the public block catalog, which reads block metadata only',
-  },
-  {
-    /**
-     * The catalog routes only — `POST /tools/{toolId}/execute` is deliberately
-     * outside. Reading a tool and running one are different jobs: the reads
-     * project `params`/`outputs`, which `@/tools/metadata` covers, while
-     * execution has to reach the executable registry by definition. That is the
-     * same reason the ~122 execute/deploy/import/webhook routes are not covered
-     * wholesale, and it keeps the rule meaningful for its four siblings: a
-     * `getTool` import in the list or detail route is still always a mistake.
-     */
-    root: 'app/api/v2/tools',
-    matches: (filename, fullPath) => isRouteEntry(filename) && !isUnderExecute(fullPath),
-    reason: 'the public tool catalog, which reads tool metadata only',
-  },
-  {
-    root: 'app/api/v2/connector-types',
-    matches: isRouteEntry,
-    reason: 'the public connector-type catalog',
-  },
-  {
-    /**
-     * Every projection module, not a barrel over them. The barrel measured a
-     * graph no consumer paid for: all six consumers deep-import, so guarding
-     * `index.ts` ratcheted a number nothing could regress. The modules
-     * themselves are what surfaces import, so they are what is guarded.
-     */
-    root: 'lib/catalog/projection',
-    matches: isSourceModule,
-    reason: 'the shared catalog projection, which every catalog surface imports',
-  },
-  {
-    /**
-     * The Copilot block-metadata tool: the reason the shared projection exists.
-     * Cutting its registry edge took it from ~6,756 modules to ~1,321, and
-     * nothing was holding that win — the tool appeared in no guarded subtree, so
-     * a single `getTool` import could have spent all of it silently.
-     */
-    root: 'lib/copilot/tools/server/blocks',
-    matches: (filename) => filename === 'get-blocks-metadata-tool.ts',
-    reason: 'the Copilot block-metadata tool, which reads block and tool metadata only',
-  },
 ]
 
 function collectEntries(
@@ -180,7 +134,7 @@ function collectEntries(
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) collectEntries(full, matches, found)
-    else if (matches(entry.name, full)) found.push(relative(APP, full))
+    else if (matches(entry.name, full)) found.push(relative(APP, full).replaceAll('\\', '/'))
   }
   return found
 }
@@ -477,7 +431,7 @@ function gatewaysFor(walkResult: Walk, doms: Dominators): Array<[string, number]
     const parent = doms.idom.get(node)
     if (!parent || parent === node) continue
     if (parent !== walkResult.entry && (doms.weight.get(parent) as number) <= size + 1) continue
-    gateways.push([relative(ROOT, node), size])
+    gateways.push([relative(ROOT, node).replaceAll('\\', '/'), size])
   }
   gateways.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   return gateways.slice(0, GATEWAY_LIMIT)

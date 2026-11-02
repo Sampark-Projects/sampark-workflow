@@ -3,7 +3,7 @@ import type { ManagedMcpConnectorId } from '@/lib/credential-groups/managed-mcp-
 /**
  * Available panel tabs
  */
-export type PanelTab = 'copilot' | 'editor' | 'toolbar'
+export type PanelTab = 'editor' | 'toolbar'
 
 /** Viewport-relative rectangle of the panel while it is detached into a floating window. */
 export interface PanelFloatRect {

@@ -19,6 +19,9 @@ const { mockIsOrganizationOnEnterprisePlan, mockGetWorkspaceWithOwner, mockGetPr
     mockGetProviderFromModel: vi.fn<(model: string) => string>(),
   }))
 
+vi.mock('@/lib/permission-groups/block-successors.generated', () => ({
+  BLOCK_ACCESS_SUCCESSORS: { starter: 'start_trigger', slack: 'slack_v2' },
+}))
 vi.mock('@/lib/billing/core/subscription', () => ({
   isOrganizationOnEnterprisePlan: mockIsOrganizationOnEnterprisePlan,
 }))

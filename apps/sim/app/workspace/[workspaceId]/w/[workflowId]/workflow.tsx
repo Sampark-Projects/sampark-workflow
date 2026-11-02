@@ -1,6 +1,6 @@
 'use client'
 
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   applyNodeChanges,
   ConnectionLineType,
@@ -58,11 +58,7 @@ import { requestNoteImage, requestNoteRename } from '@/lib/workflows/notes/canva
 import { TriggerUtils } from '@/lib/workflows/triggers/triggers'
 import { ConnectOAuthModal } from '@/app/workspace/[workspaceId]/components/connect-oauth-modal'
 import { useWorkspacePermissionsContext } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
-import {
-  CommandList,
-  DiffControls,
-  Panel,
-} from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
+import { DiffControls, Panel } from '@/app/workspace/[workspaceId]/w/[workflowId]/components'
 import { BlockMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/block-menu'
 import { CanvasMenu } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/canvas-menu'
 import {
@@ -127,7 +123,6 @@ import {
 import { useSocket } from '@/app/workspace/providers/socket-provider'
 import { getBlock } from '@/blocks'
 import { isAnnotationOnlyBlock } from '@/executor/constants'
-import { useCustomBlocks } from '@/hooks/queries/custom-blocks'
 import { useWorkspaceEnvironment } from '@/hooks/queries/environment'
 import { useFolderMap } from '@/hooks/queries/folders'
 import {
@@ -142,10 +137,8 @@ import {
 import { useUpdateWorkflow, useWorkflowMap } from '@/hooks/queries/workflows'
 import { useCanvasViewport } from '@/hooks/use-canvas-viewport'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
-import { useOAuthReturnForWorkflow } from '@/hooks/use-oauth-return'
 import { useOperationAccess } from '@/hooks/use-operation-access'
 import { useCanvasModeStore } from '@/stores/canvas-mode'
-import { useChatStore } from '@/stores/chat/store'
 import { defaultWorkflowExecutionState, useExecutionStore } from '@/stores/execution'
 import { useSearchModalStore } from '@/stores/modals/search/store'
 import type { PendingConnect } from '@/stores/modals/search/types'
@@ -159,13 +152,6 @@ import { useWorkflowRegistry } from '@/stores/workflows/registry/store'
 import { getUniqueBlockName } from '@/stores/workflows/utils'
 import { useWorkflowStore } from '@/stores/workflows/workflow/store'
 import type { BlockState } from '@/stores/workflows/workflow/types'
-
-/** Lazy-loaded components for non-critical UI that can load after initial render */
-const LazyChat = lazy(() =>
-  import('@/app/workspace/[workspaceId]/w/[workflowId]/components/chat/chat').then((mod) => ({
-    default: mod.Chat,
-  }))
-)
 
 const logger = createLogger('Workflow')
 
@@ -365,8 +351,6 @@ const WorkflowContent = React.memo(
       }
     }, [embedded, workflowIdParam, joinWorkflow, leaveWorkflow])
 
-    useOAuthReturnForWorkflow(workflowIdParam)
-
     const {
       data: workflows = {},
       isLoading: isWorkflowMapLoading,
@@ -437,7 +421,6 @@ const WorkflowContent = React.memo(
 
     // Panel open states for context menu
     const isVariablesOpen = useVariablesModalStore((state) => state.isOpen)
-    const isChatOpen = useChatStore((state) => state.isChatOpen)
 
     const snapGrid: [number, number] = useMemo(
       () => [snapToGridSize, snapToGridSize],
@@ -578,8 +561,6 @@ const WorkflowContent = React.memo(
     const { handleAutoLayout: autoLayoutWithFitView } = useAutoLayout(activeWorkflowId || null, {
       embedded,
     })
-
-    const isWorkflowEmpty = !hasBlocks
 
     /** Handles OAuth connect events dispatched by Copilot tools. */
     useEffect(() => {
@@ -1508,14 +1489,6 @@ const WorkflowContent = React.memo(
       usePanelEditorStore.getState().triggerRename()
     }, [contextMenuBlocks])
 
-    const handleContextAddBlock = useCallback(() => {
-      useSearchModalStore.getState().open()
-    }, [])
-
-    const handleContextOpenLogs = useCallback(() => {
-      router.push(`/workspace/${workspaceId}/logs?workflowIds=${workflowIdParam}`)
-    }, [router, workspaceId, workflowIdParam])
-
     const handleContextOpenSearchReplace = useCallback(() => {
       useWorkflowSearchReplaceStore.getState().open()
     }, [])
@@ -1523,11 +1496,6 @@ const WorkflowContent = React.memo(
     const handleContextToggleVariables = useCallback(() => {
       const { isOpen, setIsOpen } = useVariablesModalStore.getState()
       setIsOpen(!isOpen)
-    }, [])
-
-    const handleContextToggleChat = useCallback(() => {
-      const { isChatOpen, setIsChatOpen } = useChatStore.getState()
-      setIsChatOpen(!isChatOpen)
     }, [])
 
     useEffect(() => {
@@ -2409,62 +2377,6 @@ const WorkflowContent = React.memo(
       getUnattachedBlockPosition,
     ])
 
-    /**
-     * Listen for toolbar drops that occur on the empty-workflow overlay (command list).
-     *
-     * The overlay forwards drop events with the cursor position; this handler
-     * computes the corresponding ReactFlow coordinates and delegates to
-     * `handleToolbarDrop` so the behavior matches native canvas drops.
-     */
-    useEffect(() => {
-      const handleOverlayToolbarDrop = (event: Event) => {
-        const customEvent = event as CustomEvent<{
-          type: string
-          enableTriggerMode?: boolean
-          clientX: number
-          clientY: number
-        }>
-
-        const detail = customEvent.detail
-        if (!detail?.type) return
-
-        try {
-          const canvasElement = document.querySelector('.workflow-container') as HTMLElement | null
-          if (!canvasElement) {
-            logger.warn('Workflow canvas element not found for overlay toolbar drop')
-            return
-          }
-
-          const bounds = canvasElement.getBoundingClientRect()
-          const position = screenToFlowPosition({
-            x: detail.clientX - bounds.left,
-            y: detail.clientY - bounds.top,
-          })
-
-          handleToolbarDrop(
-            {
-              type: detail.type,
-              enableTriggerMode: detail.enableTriggerMode ?? false,
-            },
-            position
-          )
-        } catch (err) {
-          logger.error('Error handling toolbar drop from empty-workflow overlay', { err })
-        }
-      }
-
-      window.addEventListener(
-        'toolbar-drop-on-empty-workflow-overlay',
-        handleOverlayToolbarDrop as EventListener
-      )
-
-      return () =>
-        window.removeEventListener(
-          'toolbar-drop-on-empty-workflow-overlay',
-          handleOverlayToolbarDrop as EventListener
-        )
-    }, [screenToFlowPosition, handleToolbarDrop])
-
     /** Tracks blocks to pan to after diff updates. */
     const pendingZoomBlockIdsRef = useRef<Set<string> | null>(null)
     const seenDiffBlocksRef = useRef<Set<string>>(new Set())
@@ -2777,13 +2689,6 @@ const WorkflowContent = React.memo(
       if (config) blockConfigCache.current.set(type, config)
       return config
     }, [])
-
-    // Bust cached custom-block node configs when the org overlay (hydrated by
-    // CustomBlocksLoader) changes, so renames/icon edits refresh existing nodes.
-    const { data: customBlocksData } = useCustomBlocks(workspaceId)
-    useEffect(() => {
-      for (const cb of customBlocksData ?? []) blockConfigCache.current.delete(cb.type)
-    }, [customBlocksData])
 
     const prevBlocksHashRef = useRef<string>('')
     const prevBlocksRef = useRef(blocks)
@@ -5214,9 +5119,6 @@ const WorkflowContent = React.memo(
                       <FocusBlockDeepLink onTarget={setDeepLinkBlockId} />
                     </Suspense>
                     <WorkflowControls />
-                    <Suspense fallback={null}>
-                      <LazyChat />
-                    </Suspense>
 
                     <BlockMenu
                       isOpen={isBlockMenuOpen}
@@ -5259,15 +5161,11 @@ const WorkflowContent = React.memo(
                       onUndo={undo}
                       onRedo={redo}
                       onPaste={handleContextPaste}
-                      onAddBlock={handleContextAddBlock}
                       onAutoLayout={handleAutoLayout}
                       onFitToView={() => fitViewToBounds({ padding: 0.1, duration: 300 })}
-                      onOpenLogs={handleContextOpenLogs}
                       onOpenSearchReplace={handleContextOpenSearchReplace}
                       onToggleVariables={handleContextToggleVariables}
-                      onToggleChat={handleContextToggleChat}
                       isVariablesOpen={isVariablesOpen}
-                      isChatOpen={isChatOpen}
                       hasClipboard={hasClipboard()}
                       disableEdit={!effectivePermissions.canEdit}
                       canUndo={canUndo}
@@ -5284,10 +5182,6 @@ const WorkflowContent = React.memo(
             )}
 
             {!embedded && <WorkflowSearchReplace />}
-
-            {!embedded && isWorkflowReady && isWorkflowEmpty && effectivePermissions.canEdit && (
-              <CommandList />
-            )}
 
             {!embedded && <DiffControls />}
           </div>

@@ -95,6 +95,11 @@ const INDIRECT_ZOD_ROUTES = new Set([
   // client-supplied input"; query params from external callers are not
   // consumed.
   'apps/sim/app/api/schedules/execute/route.ts',
+  // ITSM integration entry points. The sync cron authenticates via the cron secret and takes no
+  // input; the redeem route is a redirect-mode handoff that reads a single opaque token from the
+  // query string and answers with a redirect rather than a JSON body.
+  'apps/sim/app/api/cron/itsm-sync/route.ts',
+  'apps/sim/app/api/itsm/redeem/route.ts',
   // Routes with no client-supplied input. Auth is handled via session/cron/internal
   // tokens and there are no params, query, or body to validate. Previously had
   // no-op `validateSchema(noInputSchema, {})` guards.
@@ -804,7 +809,7 @@ function hasZodUsage(relativePath: string, content: string): boolean {
     return true
   }
 
-  return INDIRECT_ZOD_ROUTES.has(relativePath)
+  return INDIRECT_ZOD_ROUTES.has(relativePath.replaceAll('\\', '/'))
 }
 
 function auditRoute(filePath: string, content: string): RouteAudit {

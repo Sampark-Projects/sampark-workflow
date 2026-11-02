@@ -19,22 +19,26 @@ export function useItsmProcessesTaken(blockId: string, subBlockId: string): Read
       state.blocks[blockId]?.type === ITSM_PROCESS_BLOCK_TYPE &&
       subBlockId === ITSM_PROCESS_SUBBLOCK_ID
   )
-  const otherBlockIds = useWorkflowStore((state) =>
-    isProcessPicker
-      ? Object.values(state.blocks)
-          .filter((block) => block.type === ITSM_PROCESS_BLOCK_TYPE && block.id !== blockId)
-          .map((block) => block.id)
-          .join('\n')
-      : ''
-  )
-  const takenKey = useSubBlockStore((state) => {
-    if (!otherBlockIds || !activeWorkflowId) return ''
-    const values = state.workflowValues[activeWorkflowId]
-    return otherBlockIds
-      .split('\n')
-      .map((id) => values?.[id]?.[ITSM_PROCESS_SUBBLOCK_ID])
-      .filter((value): value is string => typeof value === 'string' && value !== '')
-      .join('\n')
-  })
+  const otherBlockIds =
+    // zustand-v5-safe: the selector builds a derived array but returns its joined string primitive
+    useWorkflowStore((state) =>
+      isProcessPicker
+        ? Object.values(state.blocks)
+            .filter((block) => block.type === ITSM_PROCESS_BLOCK_TYPE && block.id !== blockId)
+            .map((block) => block.id)
+            .join('\n')
+        : ''
+    )
+  const takenKey =
+    // zustand-v5-safe: the selector builds a derived array but returns its joined string primitive
+    useSubBlockStore((state) => {
+      if (!otherBlockIds || !activeWorkflowId) return ''
+      const values = state.workflowValues[activeWorkflowId]
+      return otherBlockIds
+        .split('\n')
+        .map((id) => values?.[id]?.[ITSM_PROCESS_SUBBLOCK_ID])
+        .filter((value): value is string => typeof value === 'string' && value !== '')
+        .join('\n')
+    })
   return useMemo(() => (takenKey ? new Set(takenKey.split('\n')) : NONE), [takenKey])
 }

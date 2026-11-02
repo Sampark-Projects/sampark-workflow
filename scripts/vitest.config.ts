@@ -4,8 +4,7 @@ import { defineConfig } from 'vitest/config'
 /**
  * Repo-level scripts have their own suites. One invocation for all of them
  * replaces eighteen sequential `vitest run <file>` processes, each of which
- * paid its own startup. `scripts/openapi` keeps its own config and runs under
- * `check:openapi`.
+ * paid its own startup.
  *
  * Lives here rather than as a root `vitest.config.ts`: Vitest walks up from a
  * package's directory looking for that name, so a root config would silently

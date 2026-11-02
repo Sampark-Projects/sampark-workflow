@@ -9,12 +9,7 @@ import { PostHogProvider } from '@/app/_shell/providers/posthog-provider'
 import { generateBrandedMetadata, generateThemeCSS } from '@/ee/whitelabeling'
 import '@/app/_styles/globals.css'
 import { env } from '@/lib/core/config/env'
-import {
-  isChatEnabled,
-  isHosted,
-  isReactGrabEnabled,
-  isReactScanEnabled,
-} from '@/lib/core/config/env-flags'
+import { isHosted, isReactGrabEnabled, isReactScanEnabled } from '@/lib/core/config/env-flags'
 import { ConsentProvider } from '@/app/_shell/consent/consent-provider'
 import { DesktopUpdateGate } from '@/app/_shell/desktop-update-gate'
 import { HydrationErrorHandler } from '@/app/_shell/hydration-error-handler'
@@ -175,10 +170,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     }
 
                     var activeTab = panelState && panelState.activeTab;
-                    // A session that used the Chat tab before it was turned off still
-                    // has 'copilot' persisted; without this the CSS hides every tab
-                    // body and the panel paints empty.
-                    if (activeTab === 'copilot' && !${isChatEnabled}) {
+                    // A session that used the removed Chat tab still has 'copilot' persisted;
+                    // without this the CSS hides every tab body and the panel paints empty.
+                    if (activeTab && activeTab !== 'toolbar' && activeTab !== 'editor') {
                       activeTab = 'toolbar';
                     }
                     if (activeTab) {

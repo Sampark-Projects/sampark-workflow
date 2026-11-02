@@ -12,11 +12,6 @@ import { getWorkflowStateContract } from '@/lib/api/contracts/workflows'
 import { createWorkspaceContract } from '@/lib/api/contracts/workspaces'
 import { useSession } from '@/lib/auth/auth-client'
 import { recoverFromStaleSession } from '@/lib/auth/stale-session-recovery'
-import {
-  buildUpgradeHref,
-  isUpgradeReason,
-  UPGRADE_REASON_PARAM,
-} from '@/lib/billing/upgrade-reasons'
 import { WorkspaceRecencyStorage } from '@/lib/core/utils/browser-storage'
 import { reportEmbedFailure } from '@/lib/itsm/embed-failure'
 import { DesktopTitleBarLane } from '@/app/_shell/desktop-title-bar'
@@ -128,16 +123,8 @@ export default function WorkspacePage() {
 
     const urlParams = new URLSearchParams(window.location.search)
     const redirectWorkflowId = urlParams.get('redirect_workflow')
-    const redirectTarget = urlParams.get('redirect')
-    const rawReason = urlParams.get(UPGRADE_REASON_PARAM)
 
-    /** Preserve settings and upgrade destinations when selecting or creating a workspace. */
-    const destinationFor = (id: string) =>
-      redirectTarget === 'upgrade'
-        ? buildUpgradeHref(id, isUpgradeReason(rawReason) ? rawReason : undefined)
-        : redirectTarget === 'settings'
-          ? `/workspace/${id}/settings/general`
-          : `/workspace/${id}`
+    const destinationFor = (id: string) => `/workspace/${id}`
 
     const { workspaces, lastActiveWorkspaceId, creationPolicy } = data
 

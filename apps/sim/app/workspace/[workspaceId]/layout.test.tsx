@@ -73,10 +73,6 @@ vi.mock('@/app/workspace/[workspaceId]/components/workspace-access-denied', () =
   WorkspaceAccessDenied: () => <div>Workspace access denied</div>,
 }))
 
-vi.mock('@/app/workspace/[workspaceId]/providers/desktop-oauth-connect-listener', () => ({
-  DesktopOAuthConnectListener: () => null,
-}))
-
 vi.mock('@/app/workspace/[workspaceId]/providers/custom-blocks-loader', () => ({
   CustomBlocksLoader: () => null,
 }))

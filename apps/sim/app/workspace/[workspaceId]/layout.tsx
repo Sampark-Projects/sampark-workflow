@@ -14,11 +14,8 @@ import {
   prefetchWorkspaceSidebar,
 } from '@/app/workspace/[workspaceId]/prefetch'
 import { BlockVisibilityLoader } from '@/app/workspace/[workspaceId]/providers/block-visibility-loader'
-import { CustomBlocksLoader } from '@/app/workspace/[workspaceId]/providers/custom-blocks-loader'
-import { DesktopOAuthConnectListener } from '@/app/workspace/[workspaceId]/providers/desktop-oauth-connect-listener'
 import { FeatureFlagsProvider } from '@/app/workspace/[workspaceId]/providers/feature-flags-provider'
 import { GlobalCommandsProvider } from '@/app/workspace/[workspaceId]/providers/global-commands-provider'
-import { ProviderModelsLoader } from '@/app/workspace/[workspaceId]/providers/provider-models-loader'
 import { SettingsLoader } from '@/app/workspace/[workspaceId]/providers/settings-loader'
 import { WorkspaceHostProvider } from '@/app/workspace/[workspaceId]/providers/workspace-host-provider'
 import { WorkspacePermissionsProvider } from '@/app/workspace/[workspaceId]/providers/workspace-permissions-provider'
@@ -72,10 +69,7 @@ export default async function WorkspaceLayout({
             viewerIsHostOrganizationMember={hostContext.viewer.isHostOrganizationMember}
             initialOrgSettings={initialOrgSettings}
           >
-            <DesktopOAuthConnectListener />
             <SettingsLoader />
-            <ProviderModelsLoader />
-            <CustomBlocksLoader />
             <BlockVisibilityLoader />
             <GlobalCommandsProvider>
               <div className='flex h-screen w-full flex-col overflow-hidden bg-[var(--surface-1)]'>

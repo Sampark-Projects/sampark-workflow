@@ -147,9 +147,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/sim/.next/static ./apps/sim/
 # before the standalone server.js to hydrate process.env from the runtime secret.
 COPY --from=builder --chown=nextjs:nodejs /app/apps/sim/bootstrap.js ./apps/sim/bootstrap.js
 
-# Copy blog/author content for runtime filesystem reads (not part of the JS bundle)
-COPY --from=builder --chown=nextjs:nodejs /app/apps/sim/content ./apps/sim/content
-
 # Copy isolated-vm native module (compiled for Node.js in deps stage)
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/isolated-vm ./node_modules/isolated-vm
 

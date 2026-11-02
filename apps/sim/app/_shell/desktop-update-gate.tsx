@@ -95,9 +95,9 @@ export function DesktopUpdateGate() {
       data-native-surface-occlusion='takeover'
     >
       <div className='flex max-w-sm flex-col gap-2'>
-        <h1 className='text-[var(--text-primary)] text-lg'>Update Sim to continue</h1>
+        <h1 className='text-[var(--text-primary)] text-lg'>Update to continue</h1>
         <p className='text-[var(--text-secondary)] text-sm'>
-          This version of the Sim desktop app is no longer compatible with the latest Sim. Install
+          This version of the desktop app is no longer compatible with the latest version. Install
           the update to keep going.
         </p>
       </div>

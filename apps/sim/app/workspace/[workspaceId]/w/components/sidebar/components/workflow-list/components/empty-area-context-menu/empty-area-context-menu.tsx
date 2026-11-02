@@ -1,6 +1,7 @@
 'use client'
 
 import { Popover, PopoverAnchor, PopoverContent, PopoverItem } from '@sim/emcn'
+import { ViewportAnchor } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/workflow-list/components/viewport-anchor'
 
 interface EmptyAreaContextMenuProps {
   /**
@@ -53,15 +54,9 @@ export function EmptyAreaContextMenu({
 }: EmptyAreaContextMenuProps) {
   return (
     <Popover open={isOpen} onOpenChange={(open) => !open && onClose()} size='sm'>
-      <PopoverAnchor
-        style={{
-          position: 'fixed',
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          width: '1px',
-          height: '1px',
-        }}
-      />
+      <PopoverAnchor asChild>
+        <ViewportAnchor position={position} />
+      </PopoverAnchor>
       <PopoverContent ref={menuRef} align='start' side='bottom' sideOffset={4}>
         <PopoverItem
           disabled={disableCreateWorkflow}

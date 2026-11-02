@@ -20,7 +20,7 @@ import {
   toast,
   useScrollEdges,
 } from '@sim/emcn'
-import { MoreHorizontal, PanelLeft, Pin, Search } from '@sim/emcn/icons'
+import { MoreHorizontal, Pin, Search } from '@sim/emcn/icons'
 import { createLogger } from '@sim/logger'
 import { getErrorMessage } from '@sim/utils/errors'
 import { useQueryClient } from '@tanstack/react-query'
@@ -34,11 +34,9 @@ import { useWorkspacePermissionsContext } from '@/app/workspace/[workspaceId]/pr
 import { SidebarRenameRow } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/sidebar-rename-row'
 import { ViewInvitationsMenuItem } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/workspace-header/components/pending-invitations/view-invitations-menu-item'
 import { ViewInvitationsModal } from '@/app/workspace/[workspaceId]/w/components/sidebar/components/workspace-header/components/pending-invitations/view-invitations-modal'
-import { SIDEBAR_RAIL_CHIP_CLASS } from '@/app/workspace/[workspaceId]/w/components/sidebar/constants'
 import { invitationKeys } from '@/hooks/queries/invitations'
 import { type Workspace, workspaceKeys } from '@/hooks/queries/workspace'
 import { usePermissionConfig } from '@/hooks/use-permission-config'
-import { useSettingsNavigation } from '@/hooks/use-settings-navigation'
 
 const logger = createLogger('WorkspaceHeader')
 
@@ -71,10 +69,6 @@ interface WorkspaceHeaderProps {
   isLeavingWorkspace: boolean
   /** Current user's session ID for owner check */
   sessionUserId?: string
-  /** Whether the sidebar is collapsed */
-  isCollapsed?: boolean
-  /** Callback to expand the sidebar from collapsed state */
-  onExpandSidebar?: () => void
 }
 
 /**
@@ -95,8 +89,6 @@ function WorkspaceHeaderImpl({
   onLeaveWorkspace,
   isLeavingWorkspace,
   sessionUserId,
-  isCollapsed = false,
-  onExpandSidebar,
 }: WorkspaceHeaderProps) {
   const { billingEnabled } = useDeploymentShape()
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -220,7 +212,6 @@ function WorkspaceHeaderImpl({
     setIsMounted(true)
   }, [])
 
-  const { navigateToSettings } = useSettingsNavigation()
   const queryClient = useQueryClient()
 
   const activeWorkspaceFull = workspaces.find((w) => w.id === workspaceId) || null
@@ -351,34 +342,7 @@ function WorkspaceHeaderImpl({
 
   return (
     <div className='min-w-0 flex-1'>
-      {isMounted && isCollapsed ? (
-        <Chip
-          aria-label='Expand sidebar'
-          onClick={onExpandSidebar}
-          fullWidth
-          className={SIDEBAR_RAIL_CHIP_CLASS}
-          leftAdornment={
-            <div className='relative flex size-[16px] shrink-0 items-center justify-center'>
-              {activeWorkspace ? (
-                <>
-                  <IdentityTile
-                    initial={workspaceInitial}
-                    logoUrl={activeWorkspaceFull?.logoUrl}
-                    alt={activeWorkspaceFull?.name || 'Workspace logo'}
-                    className='group-hover:invisible'
-                  />
-                  <PanelLeft
-                    aria-hidden
-                    className='pointer-events-none invisible absolute inset-0 m-auto size-[16px] rotate-180 text-[var(--text-icon)] group-hover:visible'
-                  />
-                </>
-              ) : (
-                <Skeleton className='size-[16px] rounded-sm' />
-              )}
-            </div>
-          }
-        />
-      ) : isMounted && isWorkspaceReady ? (
+      {isMounted && isWorkspaceReady ? (
         <DropdownMenu
           open={isWorkspaceMenuOpen}
           onOpenChange={(open) => {
@@ -425,8 +389,8 @@ function WorkspaceHeaderImpl({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align='start'
-            side={isCollapsed ? 'right' : 'bottom'}
-            sideOffset={isCollapsed ? 16 : 8}
+            side='bottom'
+            sideOffset={8}
             /* Overrides the 240px default cap so the six-row list is not clipped, but
                still bounded by the space Radix measured — at six rows the menu is tall
                enough that a short viewport would otherwise push the footer actions off
@@ -666,7 +630,7 @@ function WorkspaceHeaderImpl({
           /* Geometry must match the live trigger it stands in for, or the switcher
              shifts when the workspace resolves. Chips carry no margin, so neither
              does this. */
-          className={cn(chipGeometryClass, isCollapsed ? 'flex' : 'inline-flex min-w-0 max-w-full')}
+          className={cn(chipGeometryClass, 'inline-flex min-w-0 max-w-full')}
           disabled
         >
           {activeWorkspace ? (
@@ -678,7 +642,7 @@ function WorkspaceHeaderImpl({
           ) : (
             <Skeleton className='size-[16px] shrink-0 rounded-sm' />
           )}
-          {!isCollapsed && activeWorkspace?.name && (
+          {activeWorkspace?.name && (
             <>
               <OverflowText
                 label={activeWorkspace.name}

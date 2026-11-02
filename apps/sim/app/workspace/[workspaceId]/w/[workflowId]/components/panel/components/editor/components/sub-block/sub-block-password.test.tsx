@@ -99,12 +99,15 @@ import { PASSWORD_MASKED_SUBBLOCK_TYPES } from '@/app/workspace/[workspaceId]/w/
 import { SubBlock } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/sub-block'
 import type { SubBlockConfig } from '@/blocks/types'
 
+/** The designer renders no table sub-block, so only the types the renderer still handles are probed. */
+const RENDERED_PASSWORD_TYPES = PASSWORD_MASKED_SUBBLOCK_TYPES.filter((type) => type !== 'table')
+
 function renderSubBlock(config: SubBlockConfig) {
   return renderToStaticMarkup(<SubBlock blockId='block-1' config={config} />)
 }
 
 describe('SubBlock password forwarding', () => {
-  it.each(PASSWORD_MASKED_SUBBLOCK_TYPES)('forwards password to the %s renderer', (type) => {
+  it.each(RENDERED_PASSWORD_TYPES)('forwards password to the %s renderer', (type) => {
     const html = renderSubBlock({
       id: 'secret',
       title: 'Secret',
@@ -116,7 +119,7 @@ describe('SubBlock password forwarding', () => {
     expect(html).toContain('data-password="on"')
   })
 
-  it.each(PASSWORD_MASKED_SUBBLOCK_TYPES)('leaves the %s renderer unmasked by default', (type) => {
+  it.each(RENDERED_PASSWORD_TYPES)('leaves the %s renderer unmasked by default', (type) => {
     const html = renderSubBlock({
       id: 'secret',
       title: 'Secret',

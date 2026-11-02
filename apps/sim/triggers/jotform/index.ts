@@ -1,1 +1,0 @@
-export { jotformWebhookTrigger } from './webhook'
